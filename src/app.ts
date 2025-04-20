@@ -4,6 +4,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
 
 import { errorMiddleware } from './middlewares/errorHandler';
 import { rateLimiter } from './middlewares/reateLimiter';
@@ -33,6 +34,10 @@ app
   .use(helmet())
   .use(compression())
   .use(rateLimiter);
+
+app.set('views', './src/views');
+app.set('view engine', 'ejs');
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 app.use(routes);
 

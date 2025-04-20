@@ -10,8 +10,12 @@ interface IUser extends Document {
   password: string;
   role: ROLE;
   status: STATUS;
-  refreshToken: string;
+  error: number;
+  refreshToken: string | null;
   errorLoginCount: number;
+  resetToken: string | null;
+  resetTokenExpiry: Date | null;
+  passwordChangedAt: Date | null;
   updatedAt: Date;
   createdAt: Date;
   isMatchPassword: (value: string) => Promise<boolean>;
@@ -34,8 +38,12 @@ const userSchema = new Schema<IUser>(
       default: 'ACTIVE',
       required: true,
     },
-    refreshToken: { type: String, required: true },
+    error: { type: Number, default: 0 },
+    refreshToken: { type: String, default: null },
     errorLoginCount: { type: Number, default: 0 },
+    resetToken: { type: String, default: null },
+    resetTokenExpiry: { type: Date, default: null },
+    passwordChangedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

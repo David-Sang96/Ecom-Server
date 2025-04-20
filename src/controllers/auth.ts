@@ -5,6 +5,7 @@ import moment from 'moment';
 
 import { Types } from 'mongoose';
 import { ENV_VARS } from '../config/envVars';
+import { USER } from '../models/user';
 import { createUser, getUserByEmail, updateUser } from '../services/auth';
 import AppError from '../utils/AppError';
 import {
@@ -13,6 +14,12 @@ import {
   checkUserNotExist,
 } from '../utils/auth';
 import { generateJwtTokens, generateToken } from '../utils/generate';
+import { sendForgetEMail } from '../utils/sendForgetEmail';
+import { sendWelcomeEMail } from '../utils/sendWelcomeEmail';
+interface CustomJwtPayload extends JwtPayload {
+  userId: Types.ObjectId;
+  email: string;
+}
 
 export const register = async (
   req: Request,
@@ -28,9 +35,11 @@ export const register = async (
   checkUserExist(existinguser);
 
   let userRole = 'USER';
-  if (role === 'admin') {
+  if (role === 'admin' && secret) {
     if (secret === ENV_VARS.ADMIN_SECRET) {
       userRole = 'ADMIN';
+    } else {
+      return next(new AppError('Invalid admin secret code', 400));
     }
   }
 
@@ -43,6 +52,12 @@ export const register = async (
   );
 
   await updateUser(userId, { refreshToken });
+  sendWelcomeEMail(
+    newUser.email,
+    'Welcome to our ecommerce website!',
+    newUser.name,
+    newUser.role
+  );
 
   res
     .cookie('accessToken', accessToken, {
@@ -87,19 +102,23 @@ export const login = async (
   checkUserNotExist(existingUser);
   const userId = existingUser!._id as Types.ObjectId;
 
+  const isToday = moment(existingUser!.updatedAt).isSame(new Date(), 'day');
+  if (!isToday) {
+    if (existingUser!.status === 'FREEZE') {
+      await updateUser(userId, { status: 'ACTIVE', errorLoginCount: 0 });
+    } else {
+      await updateUser(userId, { errorLoginCount: 0 });
+    }
+  }
+
   checkAccountStatus(existingUser!.status);
-  const isSameDate = moment(existingUser!.updatedAt).isSame(new Date(), 'day');
 
   const isMatch = await existingUser?.isMatchPassword(password);
   if (!isMatch) {
-    if (!isSameDate) {
-      await updateUser(userId, { errorLoginCount: 1 });
+    if (existingUser!.errorLoginCount >= 2) {
+      await updateUser(userId, { status: 'FREEZE', errorLoginCount: 3 });
     } else {
-      if (existingUser!.errorLoginCount === 2) {
-        await updateUser(userId, { status: 'FREEZE' });
-      } else {
-        await updateUser(userId, { $inc: { errorLoginCount: 1 } });
-      }
+      await updateUser(userId, { $inc: { errorLoginCount: 1 } });
     }
     return next(new AppError('Invalid credential', 401));
   }
@@ -109,7 +128,7 @@ export const login = async (
     existingUser!.email
   );
 
-  await updateUser(userId, { refreshToken });
+  await updateUser(userId, { refreshToken, errorLoginCount: 0 });
 
   res
     .cookie('accessToken', accessToken, {
@@ -139,18 +158,12 @@ export const login = async (
     });
 };
 
-interface CustomJwtPayload extends JwtPayload {
-  userId: Types.ObjectId;
-  email: string;
-}
-
 export const logout = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   const refreshToken = req.cookies ? req.cookies.refreshToken : null;
-  console.log(refreshToken);
 
   if (!refreshToken) {
     return next(
@@ -197,3 +210,113 @@ export const logout = async (
   });
   res.json({ message: 'Logged out successfully.See you soon.' });
 };
+
+export const sentEmailForForgetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const error = validationResult(req).array({ onlyFirstError: true });
+  if (error.length > 0) {
+    return next(new AppError(error[0].msg, 400));
+  }
+
+  const { email } = req.body;
+  const user = await getUserByEmail(email);
+  checkUserNotExist(user);
+
+  const token = generateToken();
+  const tokenExpiry = Date.now() + 1000 * 60 * 15;
+
+  user!.resetToken = token;
+  user!.resetTokenExpiry = new Date(tokenExpiry);
+  await user?.save();
+
+  sendForgetEMail(user!.email, 'Reset your password', user!.name, token);
+
+  res.json({ success: true, message: 'Reset email sent!' });
+};
+
+export const forgetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const error = validationResult(req).array({ onlyFirstError: true });
+  if (error.length > 0) {
+    return next(new AppError(error[0].msg, 400));
+  }
+
+  const { password, email } = req.body;
+  const resetToken = req.query.token;
+
+  if (typeof resetToken !== 'string') {
+    return next(new AppError('Invalid or missing reset token', 400));
+  }
+
+  const user = await USER.findOne({ email });
+  checkUserNotExist(user);
+  const userId = user!._id as Types.ObjectId;
+
+  const isToday = moment(user!.updatedAt).isSame(new Date(), 'day');
+  if (!isToday) {
+    if (user!.status === 'FREEZE') {
+      await updateUser(userId, { status: 'ACTIVE', error: 0 });
+    } else {
+      await updateUser(userId, { error: 0 });
+    }
+  }
+
+  checkAccountStatus(user!.status);
+
+  const isExpired = moment().isAfter(moment(user!.resetTokenExpiry));
+  if (isExpired) {
+    return next(new AppError('Reset token has expired', 403));
+  }
+
+  if (resetToken !== user!.resetToken) {
+    if (user!.error >= 2) {
+      await updateUser(userId, { status: 'FREEZE', error: 3 });
+      return next(
+        new AppError(
+          'Your account is temporarily locked.Please try again later',
+          401
+        )
+      );
+    } else {
+      await updateUser(userId, { $inc: { error: 1 } });
+    }
+    return next(new AppError('Invalid reset token.', 403));
+  }
+
+  if (user!.status === 'FREEZE') {
+    await updateUser(userId, { status: 'ACTIVE' });
+  }
+
+  if (resetToken === user!.resetToken && user?.status === 'FREEZE')
+    await updateUser(userId, { status: 'ACTIVE' });
+
+  user!.password = password;
+  user!.resetToken = null;
+  user!.resetTokenExpiry = null;
+  user!.error = 0;
+  user!.passwordChangedAt = new Date();
+  await user?.save();
+
+  res.json({
+    success: true,
+    message: 'Password has been changed successfully',
+    user: {
+      id: user!._id,
+      name: user!.name,
+      email: user!.email,
+      role: user!.role,
+    },
+  });
+};
+
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {};

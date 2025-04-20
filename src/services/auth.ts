@@ -17,3 +17,7 @@ export const createUser = (
 export const updateUser = (id: Types.ObjectId, data: any) => {
   return USER.findByIdAndUpdate(id, data, { new: true });
 };
+
+export const isTokenMatch = (token: string) => {
+  return USER.findOne({ resetToken: token });
+};

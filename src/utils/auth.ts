@@ -11,7 +11,7 @@ export const checkUserNotExist = (user: any) => {
 export const checkAccountStatus = (status: string) => {
   if (status === 'FREEZE') {
     throw new AppError(
-      'Your account is temporarily locked.Please contact our support team.',
+      'Your account is temporarily locked.Please try again later.',
       401
     );
   }

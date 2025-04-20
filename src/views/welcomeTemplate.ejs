@@ -1,0 +1,10 @@
+<h1>
+  Hello <% if (role === "ADMIN") { %> Admin <%= name %> <% } else { %> <%= name
+  %> <% } %>, welcome to the most convenient ecommerce website!
+</h1>
+
+<p>Thanks for registering! You can download your welcome PDF below:</p>
+
+<a href="<%= pdfLink %>" target="_blank">Download Welcome PDF</a>
+
+<p>Thanks,<br />The Convinence Team</p>
