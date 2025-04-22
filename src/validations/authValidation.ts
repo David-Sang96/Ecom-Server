@@ -1,4 +1,4 @@
-import { body, query } from 'express-validator';
+import { body } from 'express-validator';
 
 export const registerValidator = [
   body('name', 'Name must be at least 5 characters')
@@ -32,7 +32,7 @@ export const forgetPasswordEmailValidator = [
 ];
 
 export const forgetPasswordValidator = [
-  query('token', 'Token is required')
+  body('token', 'Invalid token')
     .notEmpty()
     .isLength({ min: 10 })
     .withMessage('Token looks too short'),
@@ -58,4 +58,12 @@ export const resetPasswordValidator = [
     .matches(/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]+$/)
     .withMessage('New password must contain at least one letters and one digit')
     .isLength({ min: 8 }),
+];
+
+export const emailVerificaitonValidator = [
+  body('token', 'Invalid token')
+    .notEmpty()
+    .isLength({ min: 10 })
+    .withMessage('Token looks too short'),
+  body('userId', 'Invalid user id').notEmpty().isMongoId(),
 ];

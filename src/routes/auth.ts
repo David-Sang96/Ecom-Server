@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  emailVerification,
   forgetPassword,
   login,
   logout,
@@ -8,6 +9,7 @@ import {
 } from '../controllers/auth';
 import { protect } from '../middlewares/protect';
 import {
+  emailVerificaitonValidator,
   forgetPasswordEmailValidator,
   forgetPasswordValidator,
   loginValidator,
@@ -28,5 +30,6 @@ router.post(
 );
 router.post('/forget-password', forgetPasswordValidator, forgetPassword);
 router.post('/reset-password', protect, resetPasswordValidator, resetPassword);
+router.post('/verify-email', emailVerificaitonValidator, emailVerification);
 
 export default router;

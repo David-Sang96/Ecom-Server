@@ -25,3 +25,7 @@ export const updateUser = (id: Types.ObjectId, data: any) => {
 export const isTokenMatch = (token: string) => {
   return USER.findOne({ resetToken: token });
 };
+
+export const isEmailVerifyTokenMatch = (token: string) => {
+  return USER.findOne({ emailVerifyToken: token });
+};

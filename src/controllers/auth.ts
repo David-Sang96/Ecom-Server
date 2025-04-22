@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
@@ -6,7 +7,6 @@ import moment from 'moment';
 import { Types } from 'mongoose';
 import { ENV_VARS } from '../config/envVars';
 import { CustomJwtPayload } from '../middlewares/protect';
-import { USER } from '../models/user';
 import {
   createUser,
   getUserByEmail,
@@ -20,8 +20,8 @@ import {
   checkUserNotExist,
 } from '../utils/auth';
 import { generateJwtTokens, generateToken } from '../utils/generate';
+import { sendEmailVerificationEmail } from '../utils/sendEmailVerificationEmail';
 import { sendForgetEMail } from '../utils/sendForgetEmail';
-import { sendWelcomeEMail } from '../utils/sendWelcomeEmail';
 
 export const register = async (
   req: Request,
@@ -46,20 +46,81 @@ export const register = async (
   }
 
   const newUser = await createUser(name, email, password, userRole);
-
   const userId = newUser._id as Types.ObjectId;
-  const { accessToken, refreshToken } = generateJwtTokens(
-    userId,
-    newUser.email
-  );
 
-  await updateUser(userId, { refreshToken });
-  sendWelcomeEMail(
+  const token = generateToken();
+  const emailVerifyToken = crypto
+    .createHash('sha256')
+    .update(token.trim())
+    .digest('hex');
+  const emailVerifyTokenExpiry = new Date(Date.now() + 15 * 60 * 1000);
+
+  await updateUser(userId, {
+    emailVerifyToken,
+    emailVerifyTokenExpiry,
+  });
+
+  sendEmailVerificationEmail(
     newUser.email,
     'Welcome to our ecommerce website!',
     newUser.name,
-    newUser.role
+    newUser.role,
+    emailVerifyToken,
+    userId
   );
+
+  res.status(201).json({
+    message: 'Registered successfully. Please verify your email.',
+    success: true,
+  });
+};
+
+export const emailVerification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const error = validationResult(req).array({ onlyFirstError: true });
+  if (error.length > 0) {
+    return next(new AppError(error[0].msg, 400));
+  }
+
+  const { userId, token } = req.body;
+  const user = await getUserById(userId);
+  checkUserNotExist(user);
+
+  const isToday = moment(user!.updatedAt).isSame(new Date(), 'day');
+  if (!isToday) {
+    if (user!.status === 'FREEZE') {
+      await updateUser(userId, { status: 'ACTIVE', error: 0 });
+    } else {
+      await updateUser(userId, { error: 0 });
+    }
+  }
+
+  checkAccountStatus(user!.status);
+
+  if (user!.emailVerifyToken !== token) {
+    if (user!.error >= 4) {
+      await updateUser(userId, { error: 5, status: 'FREEZE' });
+    } else {
+      await updateUser(userId, { $inc: { error: 1 } });
+    }
+    return next(new AppError('Invalid verify token', 400));
+  }
+
+  const isExpired = moment().isAfter(moment(user!.emailVerifyToken));
+  if (isExpired) {
+    return next(new AppError('Verify token has expired', 400));
+  }
+
+  const { accessToken, refreshToken } = generateJwtTokens(userId, user!.email);
+  await updateUser(userId, {
+    refreshToken,
+    isEmailVerified: true,
+    emailVerifyToken: null,
+    emailVerifyTokenExpiry: null,
+  });
 
   res
     .cookie('accessToken', accessToken, {
@@ -76,15 +137,14 @@ export const register = async (
       secure: ENV_VARS.NODE_ENV === 'production',
       path: '/',
     })
-    .status(201)
     .json({
-      message: 'Register successfully',
+      message: 'Email verified successfully',
       success: true,
       user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
+        id: user!._id,
+        name: user!.name,
+        email: user!.email,
+        role: user!.role,
       },
     });
 };
@@ -104,6 +164,31 @@ export const login = async (
   checkUserNotExist(existingUser);
   const userId = existingUser!._id as Types.ObjectId;
 
+  const isEmailVerified = existingUser!.isEmailVerified;
+  if (!isEmailVerified) {
+    const token = generateToken();
+    const emailVerifyToken = crypto
+      .createHash('sha256')
+      .update(token.trim())
+      .digest('hex');
+    const emailVerifyTokenExpiry = new Date(Date.now() + 15 * 60 * 1000);
+
+    await updateUser(userId, {
+      emailVerifyToken,
+      emailVerifyTokenExpiry,
+    });
+
+    sendEmailVerificationEmail(
+      existingUser!.email,
+      'Welcome to our ecommerce website!',
+      existingUser!.name,
+      existingUser!.role,
+      emailVerifyToken,
+      userId
+    );
+    return next(new AppError('Please verify your email', 400));
+  }
+
   const isToday = moment(existingUser!.updatedAt).isSame(new Date(), 'day');
   if (!isToday) {
     if (existingUser!.status === 'FREEZE') {
@@ -117,8 +202,8 @@ export const login = async (
 
   const isMatch = await existingUser?.isMatchPassword(password);
   if (!isMatch) {
-    if (existingUser!.errorLoginCount >= 2) {
-      await updateUser(userId, { status: 'FREEZE', errorLoginCount: 3 });
+    if (existingUser!.errorLoginCount >= 4) {
+      await updateUser(userId, { status: 'FREEZE', errorLoginCount: 5 });
     } else {
       await updateUser(userId, { $inc: { errorLoginCount: 1 } });
     }
@@ -249,14 +334,12 @@ export const forgetPassword = async (
     return next(new AppError(error[0].msg, 400));
   }
 
-  const { password, email } = req.body;
-  const resetToken = req.query.token;
-
-  if (typeof resetToken !== 'string') {
+  const { password, email, token } = req.body;
+  if (typeof token !== 'string') {
     return next(new AppError('Invalid or missing reset token', 400));
   }
 
-  const user = await USER.findOne({ email });
+  const user = await getUserByEmail(email);
   checkUserNotExist(user);
   const userId = user!._id as Types.ObjectId;
 
@@ -276,7 +359,7 @@ export const forgetPassword = async (
     return next(new AppError('Reset token has expired', 401));
   }
 
-  if (resetToken !== user!.resetToken) {
+  if (token !== user!.resetToken) {
     if (user!.error >= 2) {
       await updateUser(userId, { status: 'FREEZE', error: 3 });
       return next(
@@ -290,13 +373,6 @@ export const forgetPassword = async (
     }
     return next(new AppError('Invalid reset token.', 401));
   }
-
-  if (user!.status === 'FREEZE') {
-    await updateUser(userId, { status: 'ACTIVE' });
-  }
-
-  if (resetToken === user!.resetToken && user?.status === 'FREEZE')
-    await updateUser(userId, { status: 'ACTIVE' });
 
   user!.password = password;
   user!.resetToken = null;
@@ -338,6 +414,7 @@ export const resetPassword = async (
   }
 
   user!.password = password;
+  user!.passwordChangedAt = new Date();
   await user!.save();
 
   res.json({ success: true, message: 'Password updated successfully' });

@@ -11,11 +11,14 @@ export interface IUser extends Document {
   image: string | null;
   role: ROLE;
   status: STATUS;
+  isEmailVerified: boolean;
   error: number;
   refreshToken: string | null;
   errorLoginCount: number;
   resetToken: string | null;
+  emailVerifyToken: string | null;
   resetTokenExpiry: Date | null;
+  emailVerifyTokenExpiry: Date | null;
   passwordChangedAt: Date | null;
   updatedAt: Date;
   createdAt: Date;
@@ -27,6 +30,7 @@ const userSchema = new Schema<IUser>(
     name: { type: String, required: true, minlength: 5 },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    isEmailVerified: { type: Boolean, default: false },
     image: { type: String, default: null },
     role: {
       type: String,
@@ -44,7 +48,9 @@ const userSchema = new Schema<IUser>(
     refreshToken: { type: String, default: null },
     errorLoginCount: { type: Number, default: 0 },
     resetToken: { type: String, default: null },
+    emailVerifyToken: { type: String, default: null },
     resetTokenExpiry: { type: Date, default: null },
+    emailVerifyTokenExpiry: { type: Date, default: null },
     passwordChangedAt: { type: Date, default: null },
   },
   { timestamps: true }
