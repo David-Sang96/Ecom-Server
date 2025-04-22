@@ -6,7 +6,7 @@ import {
   resetPassword,
   sentEmailForForgetPassword,
 } from '../controllers/auth';
-import isAuth from '../middlewares/isAuth';
+import { protect } from '../middlewares/protect';
 import {
   forgetPasswordEmailValidator,
   forgetPasswordValidator,
@@ -27,6 +27,6 @@ router.post(
   sentEmailForForgetPassword
 );
 router.post('/forget-password', forgetPasswordValidator, forgetPassword);
-router.post('/reset-password', isAuth, resetPasswordValidator, resetPassword);
+router.post('/reset-password', protect, resetPasswordValidator, resetPassword);
 
 export default router;

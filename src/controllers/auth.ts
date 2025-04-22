@@ -1,12 +1,18 @@
 import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import moment from 'moment';
 
 import { Types } from 'mongoose';
 import { ENV_VARS } from '../config/envVars';
+import { CustomJwtPayload } from '../middlewares/protect';
 import { USER } from '../models/user';
-import { createUser, getUserByEmail, updateUser } from '../services/auth';
+import {
+  createUser,
+  getUserByEmail,
+  getUserById,
+  updateUser,
+} from '../services/auth';
 import AppError from '../utils/AppError';
 import {
   checkAccountStatus,
@@ -16,10 +22,6 @@ import {
 import { generateJwtTokens, generateToken } from '../utils/generate';
 import { sendForgetEMail } from '../utils/sendForgetEmail';
 import { sendWelcomeEMail } from '../utils/sendWelcomeEmail';
-interface CustomJwtPayload extends JwtPayload {
-  userId: Types.ObjectId;
-  email: string;
-}
 
 export const register = async (
   req: Request,
@@ -271,7 +273,7 @@ export const forgetPassword = async (
 
   const isExpired = moment().isAfter(moment(user!.resetTokenExpiry));
   if (isExpired) {
-    return next(new AppError('Reset token has expired', 403));
+    return next(new AppError('Reset token has expired', 401));
   }
 
   if (resetToken !== user!.resetToken) {
@@ -286,7 +288,7 @@ export const forgetPassword = async (
     } else {
       await updateUser(userId, { $inc: { error: 1 } });
     }
-    return next(new AppError('Invalid reset token.', 403));
+    return next(new AppError('Invalid reset token.', 401));
   }
 
   if (user!.status === 'FREEZE') {
@@ -319,4 +321,24 @@ export const resetPassword = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {};
+) => {
+  const error = validationResult(req).array({ onlyFirstError: true });
+  if (error.length > 0) {
+    return next(new AppError(error[0].msg, 400));
+  }
+  const { oldPassword, password } = req.body;
+  const userId = req.userId;
+
+  const user = await getUserById(userId);
+  checkUserNotExist(user);
+
+  const isMatch = await user!.isMatchPassword(oldPassword);
+  if (!isMatch) {
+    return next(new AppError('Old password is incorrect', 400));
+  }
+
+  user!.password = password;
+  await user!.save();
+
+  res.json({ success: true, message: 'Password updated successfully' });
+};

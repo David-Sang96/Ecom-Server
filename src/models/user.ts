@@ -4,10 +4,11 @@ import { Document, model, Schema } from 'mongoose';
 type ROLE = 'ADMIN' | 'USER';
 type STATUS = 'ACTIVE' | 'FREEZE';
 
-interface IUser extends Document {
+export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
+  image: string | null;
   role: ROLE;
   status: STATUS;
   error: number;
@@ -24,8 +25,9 @@ interface IUser extends Document {
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, minlength: 5 },
-    email: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    image: { type: String, default: null },
     role: {
       type: String,
       enum: ['ADMIN', 'USER'],

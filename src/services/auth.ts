@@ -5,6 +5,10 @@ export const getUserByEmail = (email: string) => {
   return USER.findOne({ email });
 };
 
+export const getUserById = (id: Types.ObjectId) => {
+  return USER.findOne({ _id: id });
+};
+
 export const createUser = (
   name: string,
   email: string,

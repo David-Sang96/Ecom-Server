@@ -46,13 +46,13 @@ export const forgetPasswordValidator = [
 ];
 
 export const resetPasswordValidator = [
-  body('old-password', 'Old password must be at least 8 characters')
+  body('oldPassword', 'Old password must be at least 8 characters')
     .trim()
     .notEmpty()
     .matches(/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]+$/)
     .withMessage('Old password must contain at least one letters and one digit')
     .isLength({ min: 8 }),
-  body('new-password', 'New password must be at least 8 characters')
+  body('password', 'New password must be at least 8 characters')
     .trim()
     .notEmpty()
     .matches(/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]+$/)
