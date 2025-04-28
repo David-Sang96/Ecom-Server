@@ -24,7 +24,7 @@ export const sendEmailVerificationEmail = (
   token: string,
   userId: Types.ObjectId
 ) => {
-  const emailVerificationLink = `${ENV_VARS.BASE_URL}/verify-email?token=${token}&userId=${userId}`;
+  const emailVerificationLink = `${ENV_VARS.CLIENT_URL}/auth/verify-email?token=${token}&userId=${userId}`;
   const pdfLink = `${ENV_VARS.BASE_URL}/public/Welcome.pdf`;
 
   ejs.renderFile(

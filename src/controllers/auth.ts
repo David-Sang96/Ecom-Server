@@ -164,6 +164,27 @@ export const login = async (
   checkUserNotExist(existingUser);
   const userId = existingUser!._id as Types.ObjectId;
 
+  const isToday = moment(existingUser!.updatedAt).isSame(new Date(), 'day');
+  if (!isToday) {
+    if (existingUser!.status === 'FREEZE') {
+      await updateUser(userId, { status: 'ACTIVE', errorLoginCount: 0 });
+    } else {
+      await updateUser(userId, { errorLoginCount: 0 });
+    }
+  }
+
+  checkAccountStatus(existingUser!.status);
+
+  const isMatch = await existingUser?.isMatchPassword(password);
+  if (!isMatch) {
+    if (existingUser!.errorLoginCount >= 4) {
+      await updateUser(userId, { status: 'FREEZE', errorLoginCount: 5 });
+    } else {
+      await updateUser(userId, { $inc: { errorLoginCount: 1 } });
+    }
+    return next(new AppError('Invalid credential', 401));
+  }
+
   const isEmailVerified = existingUser!.isEmailVerified;
   if (!isEmailVerified) {
     const token = generateToken();
@@ -187,27 +208,6 @@ export const login = async (
       userId
     );
     return next(new AppError('Please verify your email', 400));
-  }
-
-  const isToday = moment(existingUser!.updatedAt).isSame(new Date(), 'day');
-  if (!isToday) {
-    if (existingUser!.status === 'FREEZE') {
-      await updateUser(userId, { status: 'ACTIVE', errorLoginCount: 0 });
-    } else {
-      await updateUser(userId, { errorLoginCount: 0 });
-    }
-  }
-
-  checkAccountStatus(existingUser!.status);
-
-  const isMatch = await existingUser?.isMatchPassword(password);
-  if (!isMatch) {
-    if (existingUser!.errorLoginCount >= 4) {
-      await updateUser(userId, { status: 'FREEZE', errorLoginCount: 5 });
-    } else {
-      await updateUser(userId, { $inc: { errorLoginCount: 1 } });
-    }
-    return next(new AppError('Invalid credential', 401));
   }
 
   const { accessToken, refreshToken } = generateJwtTokens(
@@ -418,4 +418,26 @@ export const resetPassword = async (
   await user!.save();
 
   res.json({ success: true, message: 'Password updated successfully' });
+};
+
+export const checkAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const userId = req.userId;
+  const user = await getUserById(userId);
+  if (!user) {
+    return next(new AppError('Not authenticated', 401));
+  }
+
+  res.json({
+    success: true,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
 };

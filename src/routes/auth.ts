@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  checkAuth,
   emailVerification,
   forgetPassword,
   login,
@@ -31,5 +32,7 @@ router.post(
 router.post('/forget-password', forgetPasswordValidator, forgetPassword);
 router.post('/reset-password', protect, resetPasswordValidator, resetPassword);
 router.post('/verify-email', emailVerificaitonValidator, emailVerification);
+
+router.get('/verify-auth', protect, checkAuth);
 
 export default router;
