@@ -7,6 +7,7 @@ import moment from 'moment';
 import { Types } from 'mongoose';
 import { ENV_VARS } from '../config/envVars';
 import { CustomJwtPayload } from '../middlewares/protect';
+import { User } from '../models/user';
 import {
   createUser,
   getUserByEmail,
@@ -114,39 +115,23 @@ export const emailVerification = async (
     return next(new AppError('Verify token has expired', 400));
   }
 
-  const { accessToken, refreshToken } = generateJwtTokens(userId, user!.email);
+  // const { accessToken, refreshToken } = generateJwtTokens(userId, user!.email);
   await updateUser(userId, {
-    refreshToken,
     isEmailVerified: true,
     emailVerifyToken: null,
     emailVerifyTokenExpiry: null,
   });
 
-  res
-    .cookie('accessToken', accessToken, {
-      maxAge: 15 * 60 * 1000,
-      httpOnly: true,
-      sameSite: ENV_VARS.NODE_ENV === 'production' ? 'none' : 'strict',
-      secure: ENV_VARS.NODE_ENV === 'production',
-      path: '/',
-    })
-    .cookie('refreshToken', refreshToken, {
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      sameSite: ENV_VARS.NODE_ENV === 'production' ? 'none' : 'strict',
-      secure: ENV_VARS.NODE_ENV === 'production',
-      path: '/',
-    })
-    .json({
-      message: 'Email verified successfully',
-      success: true,
-      user: {
-        id: user!._id,
-        name: user!.name,
-        email: user!.email,
-        role: user!.role,
-      },
-    });
+  res.json({
+    message: 'Email verified successfully',
+    success: true,
+    user: {
+      id: user!._id,
+      name: user!.name,
+      email: user!.email,
+      role: user!.role,
+    },
+  });
 };
 
 export const login = async (
@@ -241,6 +226,10 @@ export const login = async (
         name: existingUser!.name,
         email: existingUser!.email,
         role: existingUser!.role,
+        image: existingUser!.image,
+        isEmailVerified: existingUser!.isEmailVerified,
+        accStatus: existingUser!.status,
+        updatedAt: existingUser!.updatedAt,
       },
     });
 };
@@ -319,7 +308,13 @@ export const sentEmailForForgetPassword = async (
   user!.resetTokenExpiry = new Date(tokenExpiry);
   await user?.save();
 
-  sendForgetEMail(user!.email, 'Reset your password', user!.name, token);
+  sendForgetEMail(
+    user!.email,
+    'Reset your password',
+    user!.name,
+    token,
+    user!.email
+  );
 
   res.json({ success: true, message: 'Reset email sent!' });
 };
@@ -389,6 +384,10 @@ export const forgetPassword = async (
       name: user!.name,
       email: user!.email,
       role: user!.role,
+      image: user!.image,
+      isEmailVerified: user!.isEmailVerified,
+      accStatus: user!.status,
+      updatedAt: user!.updatedAt,
     },
   });
 };
@@ -402,22 +401,64 @@ export const resetPassword = async (
   if (error.length > 0) {
     return next(new AppError(error[0].msg, 400));
   }
-  const { oldPassword, password } = req.body;
+  const { oldPassword, password, name, email } = req.body;
   const userId = req.userId;
 
   const user = await getUserById(userId);
   checkUserNotExist(user);
 
-  const isMatch = await user!.isMatchPassword(oldPassword);
-  if (!isMatch) {
-    return next(new AppError('Old password is incorrect', 400));
+  if (password && oldPassword) {
+    const isMatch = await user!.isMatchPassword(oldPassword);
+    if (!isMatch) {
+      return next(new AppError('Wrong current password!', 400));
+    }
+
+    user!.password = password;
+    user!.passwordChangedAt = new Date();
+    await user!.save();
+    await User.findByIdAndUpdate(userId, { refreshToken: generateToken() });
+
+    res
+      .clearCookie('accessToken', {
+        httpOnly: true,
+        sameSite: ENV_VARS.NODE_ENV === 'production' ? 'none' : 'strict',
+        secure: ENV_VARS.NODE_ENV === 'production',
+        path: '/',
+      })
+      .clearCookie('refreshToken', {
+        httpOnly: true,
+        sameSite: ENV_VARS.NODE_ENV === 'production' ? 'none' : 'strict',
+        secure: ENV_VARS.NODE_ENV === 'production',
+        path: '/',
+      })
+      .json({
+        success: true,
+        message: 'Password updated successfully. Please login again!',
+        type: 'reset-password',
+      });
+  } else {
+    if (name) user!.name = name;
+    if (email) user!.email = email;
+    await user?.save();
+
+    const updatedUser = await getUserById(userId);
+
+    res.json({
+      success: true,
+      message: 'Account info updated successfully',
+      type: 'account-update',
+      user: {
+        id: updatedUser!._id,
+        name: updatedUser!.name,
+        email: updatedUser!.email,
+        role: updatedUser!.role,
+        image: updatedUser!.image,
+        isEmailVerified: updatedUser!.isEmailVerified,
+        accStatus: updatedUser!.status,
+        updatedAt: updatedUser!.updatedAt,
+      },
+    });
   }
-
-  user!.password = password;
-  user!.passwordChangedAt = new Date();
-  await user!.save();
-
-  res.json({ success: true, message: 'Password updated successfully' });
 };
 
 export const checkAuth = async (
@@ -434,10 +475,14 @@ export const checkAuth = async (
   res.json({
     success: true,
     user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
+      id: user!._id,
+      name: user!.name,
+      email: user!.email,
+      role: user!.role,
+      image: user!.image,
+      isEmailVerified: user!.isEmailVerified,
+      accStatus: user!.status,
+      updatedAt: user!.updatedAt,
     },
   });
 };

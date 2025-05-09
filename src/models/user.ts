@@ -29,7 +29,7 @@ const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, minlength: 5, trim: true },
     email: { type: String, required: true, unique: true, trim: true },
-    password: { type: String, required: true },
+    password: { type: String, minlength: 8, required: true },
     isEmailVerified: { type: Boolean, default: false },
     image: { type: String, default: null },
     role: {
@@ -67,4 +67,4 @@ userSchema.methods.isMatchPassword = async function (password: string) {
   return await compare(password, this.password);
 };
 
-export const USER = model<IUser>('USER', userSchema);
+export const User = model<IUser>('User', userSchema);

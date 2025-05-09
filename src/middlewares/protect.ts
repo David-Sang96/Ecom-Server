@@ -18,7 +18,6 @@ declare global {
     interface Request {
       userId: Types.ObjectId;
       user: IUser;
-      files?: any;
     }
   }
 }

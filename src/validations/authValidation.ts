@@ -5,8 +5,19 @@ export const registerValidator = [
     .trim()
     .notEmpty()
     .isLength({ min: 5 })
-    .escape(),
-  body('email', 'Enter a valid email').trim().notEmpty().isEmail(),
+    .escape()
+    .customSanitizer((value) => {
+      return value
+        .split(' ')
+        .map((item: string) => item[0].toUpperCase() + item.slice(1))
+        .join(' ');
+    }),
+  body('email', 'Enter a valid email')
+    .notEmpty()
+    .isEmail()
+    .trim()
+    .escape()
+    .normalizeEmail(),
   body('password', 'password must be at least 8 characters')
     .trim()
     .notEmpty()
@@ -18,7 +29,12 @@ export const registerValidator = [
 ];
 
 export const loginValidator = [
-  body('email', 'Enter a valid email').trim().notEmpty().isEmail(),
+  body('email', 'Enter a valid email')
+    .notEmpty()
+    .isEmail()
+    .trim()
+    .escape()
+    .normalizeEmail(),
   body('password', 'password must be at least 8 characters')
     .trim()
     .notEmpty()
@@ -28,7 +44,12 @@ export const loginValidator = [
 ];
 
 export const forgetPasswordEmailValidator = [
-  body('email', 'Enter a valid email').trim().notEmpty().isEmail(),
+  body('email', 'Enter a valid email')
+    .notEmpty()
+    .isEmail()
+    .trim()
+    .escape()
+    .normalizeEmail(),
 ];
 
 export const forgetPasswordValidator = [
@@ -36,7 +57,13 @@ export const forgetPasswordValidator = [
     .notEmpty()
     .isLength({ min: 10 })
     .withMessage('Token looks too short'),
-  body('email', 'Enter a valid email').trim().notEmpty().isEmail(),
+  body('email', 'Enter a valid email')
+    .notEmpty()
+    .isEmail()
+    .trim()
+    .escape()
+    .normalizeEmail(),
+
   body('password', 'password must be at least 8 characters')
     .trim()
     .notEmpty()
@@ -46,13 +73,36 @@ export const forgetPasswordValidator = [
 ];
 
 export const resetPasswordValidator = [
+  // Make 'name' optional, skipping validation if it's undefined or falsy
+  body('name', 'Name must be at least 5 characters')
+    .optional({ checkFalsy: true })
+    .trim()
+    .notEmpty()
+    .isLength({ min: 5 })
+    .escape()
+    .customSanitizer((value) => {
+      return value
+        .split(' ')
+        .map((item: string) => item[0].toUpperCase() + item.slice(1))
+        .join(' ');
+    }),
+
+  // Make 'email' optional, skipping validation if it's undefined or falsy
+  body('email', 'Enter a valid email')
+    .notEmpty()
+    .isEmail()
+    .trim()
+    .escape()
+    .normalizeEmail(),
   body('oldPassword', 'Old password must be at least 8 characters')
+    .optional({ checkFalsy: true })
     .trim()
     .notEmpty()
     .matches(/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]+$/)
     .withMessage('Old password must contain at least one letters and one digit')
     .isLength({ min: 8 }),
   body('password', 'New password must be at least 8 characters')
+    .optional({ checkFalsy: true })
     .trim()
     .notEmpty()
     .matches(/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]+$/)

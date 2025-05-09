@@ -18,9 +18,10 @@ export const sendForgetEMail = (
   receiverEmail: string,
   subject: string,
   name: string,
-  token: string
+  token: string,
+  email: string
 ) => {
-  const resetLink = `${ENV_VARS.BASE_URL}/forget-password?token=${token}`;
+  const resetLink = `${ENV_VARS.CLIENT_URL}/auth/new-password?token=${token}&email=${email}`;
 
   ejs.renderFile(
     path.join(__dirname, '..', 'views', 'forgetTemplate.ejs'),

@@ -1,12 +1,12 @@
 import { Types } from 'mongoose';
-import { USER } from '../models/user';
+import { User } from '../models/user';
 
 export const getUserByEmail = (email: string) => {
-  return USER.findOne({ email });
+  return User.findOne({ email });
 };
 
 export const getUserById = (id: Types.ObjectId) => {
-  return USER.findOne({ _id: id });
+  return User.findOne({ _id: id });
 };
 
 export const createUser = (
@@ -15,17 +15,17 @@ export const createUser = (
   password: string,
   role: string
 ) => {
-  return USER.create({ name, email, password, role });
+  return User.create({ name, email, password, role });
 };
 
 export const updateUser = (id: Types.ObjectId, data: any) => {
-  return USER.findByIdAndUpdate(id, data, { new: true });
+  return User.findByIdAndUpdate(id, data, { new: true });
 };
 
 export const isTokenMatch = (token: string) => {
-  return USER.findOne({ resetToken: token });
+  return User.findOne({ resetToken: token });
 };
 
 export const isEmailVerifyTokenMatch = (token: string) => {
-  return USER.findOne({ emailVerifyToken: token });
+  return User.findOne({ emailVerifyToken: token });
 };
