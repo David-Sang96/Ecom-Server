@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import { uploadMultipleFiles } from '../../lib/upload';
+import { Types } from 'mongoose';
+import { deleteMultipleFiles, uploadMultipleFiles } from '../../lib/upload';
 import { Product } from '../../models/product';
 import AppError from '../../utils/AppError';
 
@@ -16,9 +17,9 @@ export const createProduct = async (
 
   const uploadedFiles = req.files as Express.Multer.File[];
   const { name, description, price, countInStock } = req.body;
-  const owner = req.userId;
+  const ownerId = req.userId;
 
-  let categories = req.body.category;
+  let categories = req.body.categories;
   if (!Array.isArray(categories)) {
     categories = [categories];
   }
@@ -35,13 +36,126 @@ export const createProduct = async (
     name,
     description,
     price,
-    category: categories,
+    categories,
     countInStock,
-    owner,
+    ownerId,
     images: images.map((item) => item.secure_url),
-    public_id: images.map((item) => item.public_id),
+    public_ids: images.map((item) => item.public_id),
   });
 
   await product.save();
-  res.status(201).json({ success: true, product });
+  res
+    .status(201)
+    .json({ success: true, product, message: 'Product created successfully' });
+};
+
+export const updateProduct = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const error = validationResult(req).array({ onlyFirstError: true });
+  if (error.length > 0) {
+    return next(new AppError(error[0].msg, 400));
+  }
+
+  const { productId } = req.params;
+  const { name, description, price, countInStock } = req.body;
+  const newImages = req.files as Express.Multer.File[];
+
+  if (!Types.ObjectId.isValid(productId)) {
+    return next(new AppError('Invalid mongo ID', 400));
+  }
+
+  let categories = req.body.categories;
+  if (!Array.isArray(categories)) {
+    categories = [categories];
+  }
+
+  const existingProduct = await Product.findOne({
+    ownerId: req.userId,
+    _id: productId,
+  });
+
+  if (!existingProduct) {
+    return next(new AppError('Product not found', 404));
+  }
+
+  if (newImages) {
+    const result = await uploadMultipleFiles(newImages.map((img) => img.path));
+    const newPublicIds = result.map((img) => img.public_id);
+    const newImgUrls = result.map((img) => img.secure_url);
+
+    const public_ids = [...existingProduct.public_ids, ...newPublicIds];
+    const images = [...existingProduct.images, ...newImgUrls];
+
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: existingProduct._id, ownerId: existingProduct.ownerId },
+      {
+        name,
+        description,
+        categories,
+        price,
+        countInStock,
+        public_ids,
+        images,
+        ownerId: existingProduct.ownerId,
+      },
+      { new: true, runValidators: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Product updated succesfully',
+      product: updatedProduct,
+    });
+  } else {
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: existingProduct._id, ownerId: existingProduct.ownerId },
+      {
+        name,
+        description,
+        categories,
+        price,
+        countInStock,
+        ownerId: existingProduct.ownerId,
+      },
+      { new: true, runValidators: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Product updated succesfully',
+      product: updatedProduct,
+    });
+  }
+};
+
+export const deleteProduct = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const error = validationResult(req).array({ onlyFirstError: true });
+  if (error.length > 0) {
+    return next(new AppError(error[0].msg, 400));
+  }
+
+  const { productId } = req.params;
+  if (!Types.ObjectId.isValid(productId)) {
+    return next(new AppError('Invalid mongo ID', 400));
+  }
+
+  const product = await Product.findById(productId);
+  if (!product) {
+    return next(new AppError('Product not found', 404));
+  }
+
+  await deleteMultipleFiles(product.public_ids);
+  await Product.findOneAndDelete({
+    _id: product._id,
+    ownerId: product.ownerId,
+  });
+
+  res.json({ success: true, message: 'Product deleted successfully' });
 };

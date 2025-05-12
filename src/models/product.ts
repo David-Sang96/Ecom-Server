@@ -11,10 +11,10 @@ export interface Product {
   description: string;
   price: number;
   images: string[];
-  category: CategoryType[];
+  categories: CategoryType[];
   countInStock: number;
-  owner: Types.ObjectId;
-  public_id: string[];
+  ownerId: Types.ObjectId;
+  public_ids: string[];
 }
 
 type ProductDocument = Product & Document;
@@ -38,18 +38,21 @@ const productSchema = new Schema<ProductDocument>(
     description: { type: String, required: true, minlength: 10, trim: true },
     price: { type: Number, default: 0 },
     images: { type: [String], default: [] },
-    public_id: { type: [String], default: [] },
-    category: {
+    public_ids: { type: [String], default: [] },
+    categories: {
       type: [String],
       enum: {
         values: allowedCategories,
       },
-      required: true,
+      default: [],
     },
     countInStock: { type: Number, required: true, min: 1 },
-    owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }
 );
+
+// Create index for faster queries on categories
+productSchema.index({ categories: 1 });
 
 export const Product = model<ProductDocument>('Product', productSchema);

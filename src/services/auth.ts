@@ -19,7 +19,7 @@ export const createUser = (
 };
 
 export const updateUser = (id: Types.ObjectId, data: any) => {
-  return User.findByIdAndUpdate(id, data, { new: true });
+  return User.findByIdAndUpdate(id, data, { new: true, runValidators: true });
 };
 
 export const isTokenMatch = (token: string) => {

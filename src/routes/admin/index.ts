@@ -2,18 +2,24 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 import { MulterError } from 'multer';
 
-import { createProduct } from '../../controllers/admin/product';
+import {
+  createProduct,
+  deleteProduct,
+  updateProduct,
+} from '../../controllers/admin/product';
 import { uploadMultiple } from '../../lib/multer';
 import { authorize } from '../../middlewares/authorize';
-import { protect } from '../../middlewares/protect';
 import AppError from '../../utils/AppError';
-import { createProductValidator } from '../../validations/productValidation';
+import {
+  createProductValidator,
+  deleteProductValidator,
+  updateProductValidator,
+} from '../../validations/productValidation';
 
 const router = Router();
 
 router.post(
   '/product',
-  protect,
   authorize,
   (req: Request, res: Response, next: NextFunction) => {
     uploadMultiple(req, res, (err) => {
@@ -22,6 +28,9 @@ router.post(
           return next(
             new AppError('You can only upload up to 10 images.', 400)
           );
+        }
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return next(new AppError('File too large. Max size is 5MB.', 400));
         }
         return next(new AppError(err.message, 400));
       } else if (err) {
@@ -32,17 +41,50 @@ router.post(
   },
   [
     body('images').custom((_, { req }) => {
-      if (!req.files || (!Array.isArray(req.files) && req.files.length === 0)) {
+      if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
         throw new AppError('At least one image is required', 400);
-      }
-      if (req.files.length > 10) {
-        throw new AppError('You can upload up to 10 images only', 400);
       }
       return true;
     }),
   ],
   createProductValidator,
   createProduct
+);
+
+router.put(
+  '/product/:productId',
+  authorize,
+  (req: Request, res: Response, next: NextFunction) => {
+    uploadMultiple(req, res, (err) => {
+      if (err instanceof MulterError) {
+        // A Multer error occurred when uploading.
+        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+          return next(
+            new AppError('You can only upload up to 10 images.', 400)
+          );
+        }
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return next(new AppError('File too large. Max size is 5MB.', 400));
+        }
+        return next(new AppError(err.message, 400));
+      } else if (err) {
+        // An unknown error occurred when uploading.
+        return next(new AppError(err.message, 400));
+      }
+      // Everything went fine.
+      next();
+    });
+  },
+  [body('images').optional()],
+  updateProductValidator,
+  updateProduct
+);
+
+router.delete(
+  '/product/:productId',
+  authorize,
+  deleteProductValidator,
+  deleteProduct
 );
 
 export default router;
