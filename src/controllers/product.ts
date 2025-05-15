@@ -21,7 +21,8 @@ export const getSingleProduct = async (
   const product = await Product.findOne({
     _id: productId,
     ownerId: req.userId,
-  }).select('__v');
+  }).select('-__v');
+
   if (!product) {
     return next(new AppError('Product not found', 404));
   }
@@ -37,7 +38,7 @@ export const getAllProducts = async (
   //   const skip = (page - 1) * limit;
   const cursor = req.query.cursor as string;
   const limit = parseInt(req.query.limit as string) || 6;
-  const categories = req.query.category as string[];
+  const categories = req.query.category as string;
 
   const error = validationResult(req).array({ onlyFirstError: true });
   if (error.length > 0) {
@@ -50,14 +51,17 @@ export const getAllProducts = async (
 
   const filter: any = {};
   if (categories) {
-    let categoriesArray: string[] = [];
-    if (Array.isArray(categories)) {
-      categoriesArray = categories.filter(Boolean);
-    } else {
-      categoriesArray = [categories];
-    }
+    const categoriesArray = categories
+      .split(',')
+      .filter(Boolean)
+      .map(
+        (item) => item.replace(/[^a-zA-Z]/g, '').slice(0, 30) // only letters, max 30 chars
+      )
+      .filter(Boolean);
 
-    filter.categories = { $in: categoriesArray };
+    if (categoriesArray.length > 0) {
+      filter.categories = { $in: categoriesArray };
+    }
   }
 
   // Prisma needs skip: 1 because it uses cursor equality to start the next page.

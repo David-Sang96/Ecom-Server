@@ -1,5 +1,6 @@
 import { compare, genSalt, hash } from 'bcrypt';
 import { Document, model, Schema } from 'mongoose';
+import { Image } from './product';
 
 type ROLE = 'ADMIN' | 'USER';
 type STATUS = 'ACTIVE' | 'FREEZE';
@@ -8,7 +9,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
-  image: string | null;
+  image: Image | null;
   role: ROLE;
   status: STATUS;
   isEmailVerified: boolean;
@@ -31,7 +32,14 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, trim: true },
     password: { type: String, minlength: 8, required: true },
     isEmailVerified: { type: Boolean, default: false },
-    image: { type: String, default: null },
+    image: {
+      type: {
+        url: { type: String },
+        public_id: { type: String },
+      },
+      default: null,
+      _id: false,
+    },
     role: {
       type: String,
       enum: ['ADMIN', 'USER'],

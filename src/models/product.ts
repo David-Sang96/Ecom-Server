@@ -6,15 +6,19 @@ export type CategoryType =
   | 'Home & Kitchen'
   | 'Books';
 
+export type Image = {
+  url: string;
+  public_id: string;
+};
+
 export interface Product {
   name: string;
   description: string;
   price: number;
-  images: string[];
+  images: Image[];
   categories: CategoryType[];
   countInStock: number;
   ownerId: Types.ObjectId;
-  public_ids: string[];
 }
 
 type ProductDocument = Product & Document;
@@ -37,8 +41,16 @@ const productSchema = new Schema<ProductDocument>(
     },
     description: { type: String, required: true, minlength: 10, trim: true },
     price: { type: Number, default: 0 },
-    images: { type: [String], default: [] },
-    public_ids: { type: [String], default: [] },
+    images: {
+      type: [
+        {
+          _id: false,
+          url: { type: String, required: true },
+          public_id: { type: String, required: true },
+        },
+      ],
+      default: [],
+    },
     categories: {
       type: [String],
       enum: {

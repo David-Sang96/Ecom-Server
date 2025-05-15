@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { ENV_VARS } from '../config/envVars';
 import AppError from '../utils/AppError';
 
 export const errorMiddleware = (
@@ -7,7 +8,7 @@ export const errorMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
-  const env = process.env.NODE_ENV || 'development';
+  const env = ENV_VARS.NODE_ENV || 'development';
   const status = err.statusCode || 500;
   const message = err.message || 'Something went wrong';
 

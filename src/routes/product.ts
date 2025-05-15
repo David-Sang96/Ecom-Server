@@ -12,9 +12,15 @@ router.get(
       .optional()
       .isInt({ gt: 5 }),
     query('cursor', 'Invalid Mongo ID format').optional().trim().isMongoId(),
+    query('category')
+      .optional()
+      .trim()
+      .matches(/^([a-zA-Z]+,?)*$/)
+      .withMessage('Invalid category format'),
   ],
   getAllProducts
 );
+
 router.get(
   '/:productId',
   [

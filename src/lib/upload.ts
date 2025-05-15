@@ -49,18 +49,22 @@ export const deleteSingleFile = async (publicId: string) => {
 
 export const deleteMultipleFiles = async (
   publicIds: string[]
-): Promise<string[]> => {
+): Promise<void> => {
   try {
-    const deleteResults = await Promise.all(
-      publicIds.map((public_id) =>
-        cloudinary.uploader.destroy(public_id).then((res) => {
-          if (res.result !== 'ok')
-            throw new AppError(`Failed to delete: ${public_id}`, 500);
-          return public_id;
-        })
-      )
-    );
-    return deleteResults;
+    // Create an array of promises for deleting each image
+    const deletePromises = publicIds.map((publicId) => {
+      return new Promise((resolve, reject) => {
+        cloudinary.uploader.destroy(publicId, (error, result) => {
+          if (error) {
+            return reject(error);
+          }
+          resolve(result);
+        });
+      });
+    });
+
+    const results = await Promise.all(deletePromises);
+    console.log('All images deleted successfully:', results);
   } catch (error) {
     console.error('Cloudinary multiple delete  error:', error);
     throw new AppError('Files deleting failed', 500);

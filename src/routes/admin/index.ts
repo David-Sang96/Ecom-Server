@@ -8,7 +8,6 @@ import {
   updateProduct,
 } from '../../controllers/admin/product';
 import { uploadMultiple } from '../../lib/multer';
-import { authorize } from '../../middlewares/authorize';
 import AppError from '../../utils/AppError';
 import {
   createProductValidator,
@@ -20,14 +19,16 @@ const router = Router();
 
 router.post(
   '/product',
-  authorize,
   (req: Request, res: Response, next: NextFunction) => {
     uploadMultiple(req, res, (err) => {
       if (err instanceof MulterError) {
         if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-          return next(
-            new AppError('You can only upload up to 10 images.', 400)
-          );
+          if (req.files && Array.isArray(req.files) && req.files.length > 10) {
+            return next(
+              new AppError('You can only upload up to 10 images.', 400)
+            );
+          }
+          return next(new AppError('Unexpected file upload error.', 400));
         }
         if (err.code === 'LIMIT_FILE_SIZE') {
           return next(new AppError('File too large. Max size is 5MB.', 400));
@@ -53,15 +54,17 @@ router.post(
 
 router.put(
   '/product/:productId',
-  authorize,
   (req: Request, res: Response, next: NextFunction) => {
     uploadMultiple(req, res, (err) => {
       if (err instanceof MulterError) {
         // A Multer error occurred when uploading.
         if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-          return next(
-            new AppError('You can only upload up to 10 images.', 400)
-          );
+          if (req.files && Array.isArray(req.files) && req.files.length > 10) {
+            return next(
+              new AppError('You can only upload up to 10 images.', 400)
+            );
+          }
+          return next(new AppError('Unexpected file upload error.', 400));
         }
         if (err.code === 'LIMIT_FILE_SIZE') {
           return next(new AppError('File too large. Max size is 5MB.', 400));
@@ -80,11 +83,6 @@ router.put(
   updateProduct
 );
 
-router.delete(
-  '/product/:productId',
-  authorize,
-  deleteProductValidator,
-  deleteProduct
-);
+router.delete('/product/:productId', deleteProductValidator, deleteProduct);
 
 export default router;

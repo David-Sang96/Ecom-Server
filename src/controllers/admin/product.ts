@@ -28,7 +28,7 @@ export const createProduct = async (
     return next(new AppError('No files uploaded', 400));
   }
 
-  const images = await uploadMultipleFiles(
+  const result = await uploadMultipleFiles(
     uploadedFiles.map((file) => file.path)
   );
 
@@ -39,8 +39,10 @@ export const createProduct = async (
     categories,
     countInStock,
     ownerId,
-    images: images.map((item) => item.secure_url),
-    public_ids: images.map((item) => item.public_id),
+    images: result.map((item) => ({
+      url: item.secure_url,
+      public_id: item.public_id,
+    })),
   });
 
   await product.save();
@@ -83,11 +85,11 @@ export const updateProduct = async (
 
   if (newImages) {
     const result = await uploadMultipleFiles(newImages.map((img) => img.path));
-    const newPublicIds = result.map((img) => img.public_id);
-    const newImgUrls = result.map((img) => img.secure_url);
-
-    const public_ids = [...existingProduct.public_ids, ...newPublicIds];
-    const images = [...existingProduct.images, ...newImgUrls];
+    const newResultImages = result.map((item) => ({
+      url: item.secure_url,
+      public_id: item.public_id,
+    }));
+    const images = [...newResultImages, ...existingProduct.images];
 
     const updatedProduct = await Product.findOneAndUpdate(
       { _id: existingProduct._id, ownerId: existingProduct.ownerId },
@@ -97,7 +99,6 @@ export const updateProduct = async (
         categories,
         price,
         countInStock,
-        public_ids,
         images,
         ownerId: existingProduct.ownerId,
       },
@@ -151,7 +152,8 @@ export const deleteProduct = async (
     return next(new AppError('Product not found', 404));
   }
 
-  await deleteMultipleFiles(product.public_ids);
+  const publicIds = product.images.map((item) => item.public_id);
+  await deleteMultipleFiles(publicIds);
   await Product.findOneAndDelete({
     _id: product._id,
     ownerId: product.ownerId,
