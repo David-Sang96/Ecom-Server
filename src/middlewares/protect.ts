@@ -2,8 +2,9 @@ import { NextFunction, Request, Response } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import { ENV_VARS } from '../config/envVars';
-import { IUser } from '../models/user';
+
 import { getUserById } from '../services/auth';
+import { UserDocument } from '../types';
 import AppError from '../utils/AppError';
 import { checkUserNotExist } from '../utils/auth';
 import { generateNewJwtTokens } from '../utils/generate';
@@ -17,7 +18,7 @@ declare global {
   namespace Express {
     interface Request {
       userId: Types.ObjectId;
-      user: IUser;
+      user: UserDocument;
     }
   }
 }

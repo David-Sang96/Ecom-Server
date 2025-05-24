@@ -6,13 +6,14 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
 
+import { ENV_VARS } from './config/envVars';
 import { errorMiddleware } from './middlewares/errorHandler';
 import { rateLimiter } from './middlewares/reateLimiter';
 import routes from './routes';
 
 export const app = express();
 
-const whiteList = ['http://localhost:5173'];
+const whiteList = [ENV_VARS.CLIENT_URL];
 const corsOptions = {
   origin: (origin: any, cb: (err: Error | null, origin?: any) => void) => {
     if (!origin) return cb(null, true);

@@ -1,32 +1,8 @@
 import { compare, genSalt, hash } from 'bcrypt';
-import { Document, model, Schema } from 'mongoose';
-import { Image } from './product';
+import { model, Schema } from 'mongoose';
+import { UserDocument } from '../types';
 
-type ROLE = 'ADMIN' | 'USER';
-type STATUS = 'ACTIVE' | 'FREEZE';
-
-export interface IUser extends Document {
-  name: string;
-  email: string;
-  password: string;
-  image: Image | null;
-  role: ROLE;
-  status: STATUS;
-  isEmailVerified: boolean;
-  error: number;
-  refreshToken: string | null;
-  errorLoginCount: number;
-  resetToken: string | null;
-  emailVerifyToken: string | null;
-  resetTokenExpiry: Date | null;
-  emailVerifyTokenExpiry: Date | null;
-  passwordChangedAt: Date | null;
-  updatedAt: Date;
-  createdAt: Date;
-  isMatchPassword: (value: string) => Promise<boolean>;
-}
-
-const userSchema = new Schema<IUser>(
+const userSchema = new Schema<UserDocument>(
   {
     name: { type: String, required: true, minlength: 5, trim: true },
     email: { type: String, required: true, unique: true, trim: true },
@@ -75,4 +51,4 @@ userSchema.methods.isMatchPassword = async function (password: string) {
   return await compare(password, this.password);
 };
 
-export const User = model<IUser>('User', userSchema);
+export const User = model<UserDocument>('User', userSchema);

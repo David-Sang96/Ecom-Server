@@ -1,7 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import { Types } from 'mongoose';
+import { ENV_VARS } from '../config/envVars';
+import stripe from '../lib/stripe';
+import { Order } from '../models/order';
 import { Product } from '../models/product';
+import { CartProductType } from '../types';
 import AppError from '../utils/AppError';
 
 export const getSingleProduct = async (
@@ -55,7 +59,8 @@ export const getAllProducts = async (
       .split(',')
       .filter(Boolean)
       .map(
-        (item) => item.replace(/[^a-zA-Z]/g, '').slice(0, 30) // only letters, max 30 chars
+        (item) => item.trim().slice(0, 20)
+        // (item) => item.replace(/[^a-zA-Z]/g, '').slice(0, 20) only letters, max 20 chars
       )
       .filter(Boolean);
 
@@ -96,4 +101,116 @@ export const getAllProducts = async (
     nextCursor,
     hasNextPage,
   });
+};
+
+export const stripePayment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { products } = req.body;
+  const extractingItems = products.map((item: CartProductType) => ({
+    price_data: {
+      currency: 'usd',
+      unit_amount: item.price * 100,
+      product_data: {
+        name: item.name,
+        description: item.description,
+        images: [item.image],
+      },
+    },
+    quantity: item.quantity,
+  }));
+
+  const session = await stripe.checkout.sessions.create({
+    line_items: extractingItems,
+    mode: 'payment',
+    success_url: `${ENV_VARS.CLIENT_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${ENV_VARS.CLIENT_URL}/cancel`,
+    metadata: {
+      userId: String(req.userId),
+      cart: JSON.stringify(
+        products.map((item: CartProductType) => ({
+          _id: item._id,
+          quantity: item.quantity,
+        }))
+      ),
+    },
+  });
+
+  res.json({ message: 'Keep alive!', success: true, id: session?.id });
+};
+
+export const confirmOrder = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { sessionId } = req.body;
+
+  const isExisted = await Order.findOne({ stripeSessionId: sessionId });
+  if (isExisted) {
+    return next(new AppError('Order already created', 409));
+  }
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+  if (session.payment_status === 'paid') {
+    const userId = req.userId;
+    const cartItems = JSON.parse(session.metadata?.cart || '[]');
+
+    const fullProducts = await Product.find({
+      _id: { $in: cartItems.map((item: any) => item._id) },
+    });
+
+    const extractingItems = fullProducts.map((product) => {
+      const cartItem = cartItems.find(
+        (item: any) =>
+          item._id.toString() === (product._id as string).toString()
+      );
+      return {
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        quantity: cartItem.quantity,
+        image: product.images[0].url,
+      };
+    });
+
+    const totalPrice = extractingItems.reduce((acc: number, item: any) => {
+      return acc + item.price * item.quantity;
+    }, 0);
+
+    const newOrder = await Order.create({
+      userId,
+      items: extractingItems,
+      totalPrice,
+      stripeSessionId: sessionId,
+      paymentStatus: session.payment_status,
+    });
+
+    res
+      .status(201)
+      .json({ message: 'Order confirmed', order: newOrder, success: true });
+  }
+};
+
+export const checkStripeId = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { sessionId } = req.body;
+
+  const isExisted = await Order.findOne({ stripeSessionId: sessionId });
+  if (isExisted) {
+    return next(new AppError('Order already created', 409));
+  }
+
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+  if (!session || session.payment_status !== 'paid') {
+    return next(new AppError('Invalid or unpaid session', 400));
+  }
+
+  res.json({ success: true, message: 'Valid stripe ID' });
 };

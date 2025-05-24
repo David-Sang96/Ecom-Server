@@ -266,7 +266,7 @@ export const logout = async (
     return next(new AppError('Authentication failed.Please login again.', 401));
   }
 
-  const user = await getUserByEmail(decode.email);
+  const user = await getUserById(decode.userId);
   checkUserNotExist(user);
 
   await updateUser(decode.userId, { refreshToken: generateToken() });

@@ -16,12 +16,18 @@ export const deleteImage = async (
     return next(new AppError(error[0].msg, 400));
   }
   const { productId, publicId } = req.body;
+  const userId = req.userId;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
 
   if (!Types.ObjectId.isValid(productId)) {
     return next(new AppError('Invalid Product ID format', 400));
   }
 
-  const product = await Product.findById(productId);
+  const product = await Product.findOne({ _id: productId, ownerId: user._id });
   if (!product) {
     return next(new AppError('Product not found', 404));
   }
@@ -68,7 +74,7 @@ export const uploadProfileImage = async (
   await user.save();
 
   const updatedUser = await User.findById(user._id).select(
-    '_id name email password isEmailVerified image role status'
+    '_id name email status isEmailVerified image role status updatedAt'
   );
   res.json({
     success: true,

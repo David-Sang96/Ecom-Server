@@ -1,27 +1,5 @@
-import { Document, model, Schema, Types } from 'mongoose';
-
-export type CategoryType =
-  | 'Electronics'
-  | 'Clothing'
-  | 'Home & Kitchen'
-  | 'Books';
-
-export type Image = {
-  url: string;
-  public_id: string;
-};
-
-export interface Product {
-  name: string;
-  description: string;
-  price: number;
-  images: Image[];
-  categories: CategoryType[];
-  countInStock: number;
-  ownerId: Types.ObjectId;
-}
-
-type ProductDocument = Product & Document;
+import { model, Schema } from 'mongoose';
+import { CategoryType, ProductDocument } from '../types';
 
 const allowedCategories: CategoryType[] = [
   'Books',
@@ -40,7 +18,7 @@ const productSchema = new Schema<ProductDocument>(
       trim: true,
     },
     description: { type: String, required: true, minlength: 10, trim: true },
-    price: { type: Number, default: 0 },
+    price: { type: Number, required: true },
     images: {
       type: [
         {
@@ -56,7 +34,7 @@ const productSchema = new Schema<ProductDocument>(
       enum: {
         values: allowedCategories,
       },
-      default: [],
+      required: true,
     },
     countInStock: { type: Number, required: true, min: 1 },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
