@@ -168,9 +168,11 @@ export const confirmOrder = async (
           item._id.toString() === (product._id as string).toString()
       );
       return {
+        productId: product._id,
         name: product.name,
         description: product.description,
         price: product.price,
+        categories: product.categories,
         quantity: cartItem.quantity,
         image: product.images[0].url,
       };
@@ -213,4 +215,17 @@ export const checkStripeId = async (
   }
 
   res.json({ success: true, message: 'Valid stripe ID' });
+};
+
+export const getOrdersByUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const userId = req.userId;
+  const orders = await Order.find({ userId });
+  if (!orders) {
+    return next(new AppError('No orders found', 404));
+  }
+  res.json({ success: true, orders });
 };

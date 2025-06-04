@@ -24,11 +24,7 @@ export interface UserDocument extends Document {
   isMatchPassword: (value: string) => Promise<boolean>;
 }
 
-export type CategoryType =
-  | 'Electronics'
-  | 'Clothing'
-  | 'Home & Kitchen'
-  | 'Books';
+export type CategoryType = 'Electronics' | 'Clothing' | 'Kitchen' | 'Books';
 
 type Image = {
   url: string;
@@ -52,6 +48,7 @@ export type CartProductType = {
   description: string;
   quantity: number;
   image: string;
+  categories: [string];
 };
 
 export interface OrderDocument extends Document {

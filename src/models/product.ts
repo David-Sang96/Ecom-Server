@@ -1,11 +1,11 @@
 import { model, Schema } from 'mongoose';
 import { CategoryType, ProductDocument } from '../types';
 
-const allowedCategories: CategoryType[] = [
+export const allowedCategories: CategoryType[] = [
   'Books',
   'Clothing',
   'Electronics',
-  'Home & Kitchen',
+  'Kitchen',
 ];
 
 const productSchema = new Schema<ProductDocument>(

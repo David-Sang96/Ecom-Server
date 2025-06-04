@@ -17,11 +17,11 @@ export const createProductValidator = [
     .withMessage('decimal allow only 2 places.'),
   body(
     'categories',
-    'Invalid categories.Must be Eletronics,Clothing,Home & Kitchen or Books.'
+    'Invalid categories.Must be Eletronics,Clothing,Kitchen or Books.'
   )
     .trim()
     .notEmpty()
-    .isIn(['Electronics', 'Clothing', 'Home & Kitchen', 'Books']),
+    .isIn(['Electronics', 'Clothing', 'Kitchen', 'Books']),
   body('countInStock', 'Product must have at least one stock').isInt({
     min: 1,
   }),
@@ -50,11 +50,11 @@ export const updateProductValidator = [
     .withMessage('decimal allow only 2 places.'),
   body(
     'categories',
-    'Invalid categories.Must be Eletronics,Clothing,Home & Kitchen or Books.'
+    'Invalid categories.Must be Eletronics,Clothing,Kitchen or Books.'
   )
     .trim()
     .notEmpty()
-    .isIn(['Electronics', 'Clothing', 'Home & Kitchen', 'Books']),
+    .isIn(['Electronics', 'Clothing', 'Kitchen', 'Books']),
   body('countInStock', 'Product must have at least one stock').isInt({
     min: 1,
   }),

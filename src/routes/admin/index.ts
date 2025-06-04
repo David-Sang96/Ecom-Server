@@ -3,8 +3,12 @@ import { body } from 'express-validator';
 import { MulterError } from 'multer';
 
 import {
+  allProducts,
   createProduct,
   deleteProduct,
+  getAllOrders,
+  getAllUsers,
+  getProductSales,
   updateProduct,
 } from '../../controllers/admin/product';
 import { uploadMultiple } from '../../lib/multer';
@@ -16,6 +20,13 @@ import {
 } from '../../validations/productValidation';
 
 const router = Router();
+
+router.get('/product', allProducts);
+router.get('/product-sales', getProductSales);
+
+router.get('/orders', getAllOrders);
+
+router.get('/users', getAllUsers);
 
 router.post(
   '/product',

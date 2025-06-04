@@ -4,6 +4,7 @@ import {
   checkStripeId,
   confirmOrder,
   getAllProducts,
+  getOrdersByUser,
   getSingleProduct,
   stripePayment,
 } from '../controllers/product';
@@ -45,5 +46,7 @@ router.post('/checkout', stripePayment);
 router.post('/confirm-order', confirmOrder);
 
 router.post('/check-stripeId', checkStripeId);
+
+router.get('/orders', getOrdersByUser);
 
 export default router;

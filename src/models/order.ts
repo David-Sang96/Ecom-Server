@@ -1,11 +1,17 @@
 import { model, Schema } from 'mongoose';
 import { OrderDocument } from '../types';
+import { allowedCategories } from './product';
 
 const orderSchema = new Schema<OrderDocument>(
   {
     items: {
       type: [
         {
+          productId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Product',
+            required: true,
+          },
           name: {
             type: String,
             required: true,
@@ -18,6 +24,13 @@ const orderSchema = new Schema<OrderDocument>(
             required: true,
             minlength: 10,
             trim: true,
+          },
+          categories: {
+            type: [String],
+            enum: {
+              values: allowedCategories,
+            },
+            required: true,
           },
           price: { type: Number, required: true },
           quantity: { type: Number, required: true },

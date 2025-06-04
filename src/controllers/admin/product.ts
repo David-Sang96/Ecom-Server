@@ -2,8 +2,25 @@ import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import { Types } from 'mongoose';
 import { deleteMultipleFiles, uploadMultipleFiles } from '../../lib/upload';
+import { Order } from '../../models/order';
 import { Product } from '../../models/product';
+import { User } from '../../models/user';
 import AppError from '../../utils/AppError';
+
+export const allProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const ownerId = req.userId;
+  const products = await Product.find({ ownerId }).select(
+    '-__v -createdAt -updatedAt'
+  );
+  if (!products) {
+    return next(new AppError('No products found', 404));
+  }
+  res.json({ success: true, products });
+};
 
 export const createProduct = async (
   req: Request,
@@ -160,4 +177,84 @@ export const deleteProduct = async (
   });
 
   res.json({ success: true, message: 'Product deleted successfully' });
+};
+
+export const getAllOrders = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const orders = await Order.find()
+    .sort({ createdAt: -1 })
+    .populate('userId', 'name');
+  if (!orders) {
+    return next(new AppError('No orders found', 404));
+  }
+  res.json({ success: true, orders });
+};
+
+export const getAllUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const users = await User.find();
+  if (!users) {
+    return next(new AppError('No users found', 404));
+  }
+  res.json({ success: true, users });
+};
+
+export const getProductSales = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const lastSevenDay = new Date();
+  lastSevenDay.setDate(lastSevenDay.getDate() - 7);
+
+  const sales = await Order.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: lastSevenDay },
+      },
+    },
+    { $unwind: '$items' },
+    { $unwind: '$items.categories' }, // unwind categories array
+    {
+      $project: {
+        // productId: '$items.productId',
+        category: '$items.categories',
+        name: '$items.name',
+        quantity: '$items.quantity',
+        price: '$items.price',
+        date: {
+          $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+        },
+        rawDate: '$createdAt',
+      },
+    },
+    {
+      $group: {
+        _id: {
+          // productId: '$productId',
+          category: '$category',
+          date: '$date',
+        },
+        // name: { $first: '$name' },
+        totalProduct: { $sum: 1 },
+        totalSold: { $sum: '$quantity' },
+        totalRevenue: {
+          $sum: { $multiply: ['$price', '$quantity'] },
+        },
+        rawDate: { $min: '$rawDate' },
+      },
+    },
+    { $sort: { rawDate: 1 } },
+  ]);
+
+  if (!sales) {
+    return next(new AppError('Failed to get sales data', 500));
+  }
+  res.json({ success: true, sales });
 };
