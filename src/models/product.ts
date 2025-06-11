@@ -1,5 +1,5 @@
 import { model, Schema } from 'mongoose';
-import { CategoryType, ProductDocument } from '../types';
+import { CategoryType, OrderStatus, ProductDocument } from '../types';
 
 export const allowedCategories: CategoryType[] = [
   'Books',
@@ -8,13 +8,22 @@ export const allowedCategories: CategoryType[] = [
   'Kitchen',
 ];
 
+export const orderStatus: OrderStatus[] = [
+  'pending',
+  'shipped',
+  'cancelled',
+  'completed',
+  'failed',
+  'processing',
+];
+
 const productSchema = new Schema<ProductDocument>(
   {
     name: {
       type: String,
       required: true,
-      minlength: 3,
-      maxlength: 20,
+      minlength: 10,
+      maxlength: 100,
       trim: true,
     },
     description: { type: String, required: true, minlength: 10, trim: true },
@@ -37,6 +46,11 @@ const productSchema = new Schema<ProductDocument>(
       required: true,
     },
     countInStock: { type: Number, required: true, min: 1 },
+    status: {
+      type: String,
+      enum: { values: orderStatus },
+      default: 'pending',
+    },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }

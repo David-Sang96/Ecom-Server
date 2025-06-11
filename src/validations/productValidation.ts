@@ -1,10 +1,10 @@
 import { body, param } from 'express-validator';
 
 export const createProductValidator = [
-  body('name', 'Product name should be 3 to 20 characters')
+  body('name', 'Product name should be 10 to 100 characters')
     .trim()
     .notEmpty()
-    .isLength({ min: 3, max: 20 })
+    .isLength({ min: 10, max: 100 })
     .escape(),
   body('description', 'Description must be at least 10 characters')
     .trim()
@@ -34,10 +34,10 @@ export const updateProductValidator = [
     .withMessage('Product ID is required')
     .isMongoId()
     .withMessage('Invalid Product ID format'),
-  body('name', 'Product name should be 3 to 20 characters')
+  body('name', 'Product name should be 10 to 100 characters')
     .trim()
     .notEmpty()
-    .isLength({ min: 3, max: 20 })
+    .isLength({ min: 10, max: 100 })
     .escape(),
   body('description', 'Description must be at least 10 characters')
     .trim()

@@ -149,6 +149,16 @@ export const login = async (
   checkUserNotExist(existingUser);
   const userId = existingUser!._id as Types.ObjectId;
 
+  if (existingUser!.ban.isBanned) {
+    return next(
+      new AppError(
+        existingUser!.ban.reason ||
+          'Your account has been banned.Please contact to our support.',
+        403
+      )
+    );
+  }
+
   const isToday = moment(existingUser!.updatedAt).isSame(new Date(), 'day');
   if (!isToday) {
     if (existingUser!.status === 'FREEZE') {

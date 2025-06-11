@@ -19,12 +19,25 @@ export interface UserDocument extends Document {
   resetTokenExpiry: Date | null;
   emailVerifyTokenExpiry: Date | null;
   passwordChangedAt: Date | null;
+  ban: {
+    isBanned: boolean;
+    adminId: Types.ObjectId | null;
+    reason: string;
+    bannedAt: Date | null;
+  };
   updatedAt: Date;
   createdAt: Date;
   isMatchPassword: (value: string) => Promise<boolean>;
 }
 
 export type CategoryType = 'Electronics' | 'Clothing' | 'Kitchen' | 'Books';
+export type OrderStatus =
+  | 'pending'
+  | 'processing'
+  | 'failed'
+  | 'shipped'
+  | 'cancelled'
+  | 'completed';
 
 type Image = {
   url: string;
@@ -39,6 +52,7 @@ export interface ProductDocument extends Document {
   categories: CategoryType[];
   countInStock: number;
   ownerId: Types.ObjectId;
+  status: OrderStatus;
 }
 
 export type CartProductType = {
@@ -57,4 +71,5 @@ export interface OrderDocument extends Document {
   totalPrice: number;
   stripeSessionId: string;
   paymentStatus: string;
+  status: OrderStatus;
 }

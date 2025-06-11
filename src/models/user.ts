@@ -1,5 +1,5 @@
 import { compare, genSalt, hash } from 'bcrypt';
-import { model, Schema } from 'mongoose';
+import { model, Schema, Types } from 'mongoose';
 import { UserDocument } from '../types';
 
 const userSchema = new Schema<UserDocument>(
@@ -36,6 +36,12 @@ const userSchema = new Schema<UserDocument>(
     resetTokenExpiry: { type: Date, default: null },
     emailVerifyTokenExpiry: { type: Date, default: null },
     passwordChangedAt: { type: Date, default: null },
+    ban: {
+      isBanned: { type: Boolean, default: false },
+      adminId: { type: Types.ObjectId, ref: 'User', default: null },
+      reason: { type: String, default: '' },
+      bannedAt: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );

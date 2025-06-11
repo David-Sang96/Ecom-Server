@@ -82,3 +82,28 @@ export const uploadProfileImage = async (
     updatedUser,
   });
 };
+
+export const downLoadImage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const imageUrl = req.query.url as string;
+
+  if (!imageUrl) {
+    return next(new AppError('Image url is required', 400));
+  }
+
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    return next(new AppError('Failed to fetch image', 500));
+  }
+
+  const contentType = response.headers.get('content-type') || 'image/jpeg';
+  const filename = imageUrl.split('/').pop() || 'download.jpg';
+  const buffer = Buffer.from(await response.arrayBuffer());
+
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', contentType);
+  res.send(buffer);
+};

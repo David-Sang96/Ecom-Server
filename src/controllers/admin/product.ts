@@ -4,7 +4,6 @@ import { Types } from 'mongoose';
 import { deleteMultipleFiles, uploadMultipleFiles } from '../../lib/upload';
 import { Order } from '../../models/order';
 import { Product } from '../../models/product';
-import { User } from '../../models/user';
 import AppError from '../../utils/AppError';
 
 export const allProducts = async (
@@ -13,9 +12,9 @@ export const allProducts = async (
   next: NextFunction
 ) => {
   const ownerId = req.userId;
-  const products = await Product.find({ ownerId }).select(
-    '-__v -createdAt -updatedAt'
-  );
+  const products = await Product.find({ ownerId })
+    .select('-__v -createdAt -updatedAt')
+    .sort({ createdAt: -1 });
   if (!products) {
     return next(new AppError('No products found', 404));
   }
@@ -49,7 +48,7 @@ export const createProduct = async (
     uploadedFiles.map((file) => file.path)
   );
 
-  const product = new Product({
+  const product = await Product.create({
     name,
     description,
     price,
@@ -62,7 +61,6 @@ export const createProduct = async (
     })),
   });
 
-  await product.save();
   res
     .status(201)
     .json({ success: true, product, message: 'Product created successfully' });
@@ -177,32 +175,6 @@ export const deleteProduct = async (
   });
 
   res.json({ success: true, message: 'Product deleted successfully' });
-};
-
-export const getAllOrders = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const orders = await Order.find()
-    .sort({ createdAt: -1 })
-    .populate('userId', 'name');
-  if (!orders) {
-    return next(new AppError('No orders found', 404));
-  }
-  res.json({ success: true, orders });
-};
-
-export const getAllUsers = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const users = await User.find();
-  if (!users) {
-    return next(new AppError('No users found', 404));
-  }
-  res.json({ success: true, users });
 };
 
 export const getProductSales = async (

@@ -2,12 +2,19 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 
 import { MulterError } from 'multer';
-import { deleteImage, uploadProfileImage } from '../controllers/file';
+import {
+  deleteImage,
+  downLoadImage,
+  uploadProfileImage,
+} from '../controllers/file';
 import { uploadSingle } from '../lib/multer';
+import { authorize } from '../middlewares/authorize';
 import { protect } from '../middlewares/protect';
 import AppError from '../utils/AppError';
 
 const router = Router();
+
+router.get('/download-image', downLoadImage);
 
 router.post(
   '/profile',
@@ -42,6 +49,7 @@ router.post(
 router.delete(
   '/',
   protect,
+  authorize,
   [
     body('productId')
       .trim()

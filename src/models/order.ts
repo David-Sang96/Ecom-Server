@@ -1,6 +1,6 @@
 import { model, Schema } from 'mongoose';
 import { OrderDocument } from '../types';
-import { allowedCategories } from './product';
+import { allowedCategories, orderStatus } from './product';
 
 const orderSchema = new Schema<OrderDocument>(
   {
@@ -37,10 +37,15 @@ const orderSchema = new Schema<OrderDocument>(
           image: { type: String, required: true },
         },
       ],
+      required: true,
     },
     totalPrice: { type: Number, required: true },
     stripeSessionId: { type: String, required: true, unique: true },
     paymentStatus: { type: String, required: true },
+    status: {
+      type: String,
+      enum: { values: orderStatus },
+    },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }

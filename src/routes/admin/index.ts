@@ -6,8 +6,6 @@ import {
   allProducts,
   createProduct,
   deleteProduct,
-  getAllOrders,
-  getAllUsers,
   getProductSales,
   updateProduct,
 } from '../../controllers/admin/product';
@@ -21,15 +19,11 @@ import {
 
 const router = Router();
 
-router.get('/product', allProducts);
+router.get('/', allProducts);
 router.get('/product-sales', getProductSales);
 
-router.get('/orders', getAllOrders);
-
-router.get('/users', getAllUsers);
-
 router.post(
-  '/product',
+  '/',
   (req: Request, res: Response, next: NextFunction) => {
     uploadMultiple(req, res, (err) => {
       if (err instanceof MulterError) {
@@ -64,7 +58,7 @@ router.post(
 );
 
 router.put(
-  '/product/:productId',
+  '/:productId',
   (req: Request, res: Response, next: NextFunction) => {
     uploadMultiple(req, res, (err) => {
       if (err instanceof MulterError) {
@@ -94,6 +88,6 @@ router.put(
   updateProduct
 );
 
-router.delete('/product/:productId', deleteProductValidator, deleteProduct);
+router.delete('/:productId', deleteProductValidator, deleteProduct);
 
 export default router;

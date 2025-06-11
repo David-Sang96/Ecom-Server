@@ -8,7 +8,13 @@ export const uploadSingleFile = async (
   file: string
 ): Promise<{ secure_url: string; public_id: string }> => {
   try {
-    const { secure_url, public_id } = await cloudinary.uploader.upload(file);
+    const { secure_url, public_id } = await cloudinary.uploader.upload(file, {
+      transformation: [
+        { width: 800, crop: 'limit' },
+        { quality: 'auto' },
+        { fetch_format: 'auto' },
+      ],
+    });
     return { secure_url, public_id };
   } catch (error) {
     console.error('Cloudinary upload error:', error);
@@ -22,7 +28,13 @@ export const uploadMultipleFiles = async (
   try {
     const uploadFiles = files.map((file) => {
       return limit(async () => {
-        const result = await cloudinary.uploader.upload(file);
+        const result = await cloudinary.uploader.upload(file, {
+          transformation: [
+            { width: 800, crop: 'limit' },
+            { quality: 'auto' },
+            { fetch_format: 'auto' },
+          ],
+        });
         return result;
       });
     });
