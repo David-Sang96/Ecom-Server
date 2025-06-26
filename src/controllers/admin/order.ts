@@ -3,17 +3,33 @@ import { validationResult } from 'express-validator';
 import { Order } from '../../models/order';
 import AppError from '../../utils/AppError';
 
+export const getLastSevenDaysOrders = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const orders = await Order.find({ createdAt: { $gte: sevenDaysAgo } })
+    .sort({ createdAt: -1 })
+    .populate('userId', 'name');
+
+  res.json({ success: true, orders });
+};
+
 export const getAllOrders = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
   const orders = await Order.find()
     .sort({ createdAt: -1 })
     .populate('userId', 'name');
-  if (!orders) {
-    return next(new AppError('No orders found', 404));
-  }
+
   res.json({ success: true, orders });
 };
 
@@ -29,7 +45,11 @@ export const getOneOrder = async (
   const { orderId } = req.params;
   const userId = req.userId;
 
-  const order = await Order.findOne({ _id: orderId, userId });
+  const order = await Order.findOne({ _id: orderId, userId }).populate(
+    'userId',
+    'name email'
+  );
+
   if (!order) return next(new AppError('Order not found', 404));
 
   res.json({ success: true, order });
@@ -48,11 +68,17 @@ export const updateOrder = async (
   const userId = req.userId;
   const { orderId } = req.params;
 
+  const data = {
+    status,
+    paymentStatus: ['failed', 'cancelled'].includes(status) ? 'failed' : 'paid',
+  };
+
   const updatedOrder = await Order.findOneAndUpdate(
     { _id: orderId, userId },
-    { status },
+    data,
     { new: true }
   );
+
   if (!updatedOrder) return next(new AppError('Order not found', 404));
 
   res.json({

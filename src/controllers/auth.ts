@@ -159,6 +159,12 @@ export const login = async (
     );
   }
 
+  if (existingUser!.deActivate.isDeActivated) {
+    await updateUser(userId, {
+      deActivate: { isDeActivated: false, reason: '', deActivateAt: null },
+    });
+  }
+
   const isToday = moment(existingUser!.updatedAt).isSame(new Date(), 'day');
   if (!isToday) {
     if (existingUser!.status === 'FREEZE') {
@@ -210,7 +216,11 @@ export const login = async (
     existingUser!.email
   );
 
-  await updateUser(userId, { refreshToken, errorLoginCount: 0 });
+  await updateUser(userId, {
+    refreshToken,
+    errorLoginCount: 0,
+    lastLogin: new Date(),
+  });
 
   res
     .cookie('accessToken', accessToken, {
@@ -240,6 +250,7 @@ export const login = async (
         isEmailVerified: existingUser!.isEmailVerified,
         accStatus: existingUser!.status,
         updatedAt: existingUser!.updatedAt,
+        isDeactivated: existingUser!.deActivate.isDeActivated,
       },
     });
 };
@@ -294,7 +305,7 @@ export const logout = async (
     secure: ENV_VARS.NODE_ENV === 'production',
     path: '/',
   });
-  res.json({ message: 'Logged out successfully.See you soon.' });
+  res.json({ message: 'Logged out successfully.See you soon.', success: true });
 };
 
 export const sentEmailForForgetPassword = async (
@@ -471,6 +482,32 @@ export const resetPassword = async (
   }
 };
 
+export const deActivateAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const error = validationResult(req).array({ onlyFirstError: true });
+  if (error.length) {
+    return next(new AppError(error[0].msg, 400));
+  }
+
+  const { userId, reason } = req.body;
+  const user = await User.findById(userId);
+  if (!user) {
+    return next(new AppError('User not found', 400));
+  }
+
+  user.deActivate = {
+    isDeActivated: true,
+    reason,
+    deActivateAt: new Date(),
+  };
+  await user.save();
+
+  res.json({ success: true, message: 'Your account has been deactivated.' });
+};
+
 export const checkAuth = async (
   req: Request,
   res: Response,
@@ -493,6 +530,7 @@ export const checkAuth = async (
       isEmailVerified: user!.isEmailVerified,
       accStatus: user!.status,
       updatedAt: user!.updatedAt,
+      isBanned: user!.ban.isBanned,
     },
   });
 };

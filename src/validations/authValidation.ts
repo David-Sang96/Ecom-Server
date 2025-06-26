@@ -117,3 +117,12 @@ export const emailVerificaitonValidator = [
     .withMessage('Token looks too short'),
   body('userId', 'Invalid user id').notEmpty().isMongoId(),
 ];
+
+export const deActivateValidator = [
+  body('userId', 'User ID is required')
+    .notEmpty()
+    .trim()
+    .isMongoId()
+    .withMessage('Invalid User ID format'),
+  body('reason', 'Reason is required').trim().notEmpty(),
+];

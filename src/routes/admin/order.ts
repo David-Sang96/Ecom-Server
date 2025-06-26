@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   deleteOrder,
   getAllOrders,
+  getLastSevenDaysOrders,
   getOneOrder,
   updateOrder,
 } from '../../controllers/admin/order';
@@ -12,7 +13,8 @@ import {
 
 const router = Router();
 
-router.get('/', getAllOrders);
+router.get('/', getLastSevenDaysOrders);
+router.get('/all', getAllOrders);
 
 router.get('/:orderId', mongoIdValidator, getOneOrder);
 

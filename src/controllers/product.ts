@@ -5,6 +5,7 @@ import { ENV_VARS } from '../config/envVars';
 import stripe from '../lib/stripe';
 import { Order } from '../models/order';
 import { Product } from '../models/product';
+import { User } from '../models/user';
 import { CartProductType } from '../types';
 import AppError from '../utils/AppError';
 
@@ -22,10 +23,19 @@ export const getSingleProduct = async (
     return next(new AppError('Invalid mongo ID', 400));
   }
 
-  const product = await Product.findOne({
-    _id: productId,
-    ownerId: req.userId,
-  }).select('-__v');
+  const user = await User.findById(req.userId);
+
+  let product;
+  if (user?.role === 'ADMIN') {
+    product = await Product.findOne({
+      _id: productId,
+      ownerId: req.userId,
+    }).select('-__v');
+  } else {
+    product = await Product.findOne({
+      _id: productId,
+    }).select('-__v');
+  }
 
   if (!product) {
     return next(new AppError('Product not found', 404));
@@ -174,7 +184,7 @@ export const confirmOrder = async (
         price: product.price,
         categories: product.categories,
         quantity: cartItem.quantity,
-        image: product.images[0].url,
+        images: product.images.map((item) => item.url),
       };
     });
 

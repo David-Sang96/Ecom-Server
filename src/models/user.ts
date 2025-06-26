@@ -5,7 +5,13 @@ import { UserDocument } from '../types';
 const userSchema = new Schema<UserDocument>(
   {
     name: { type: String, required: true, minlength: 5, trim: true },
-    email: { type: String, required: true, unique: true, trim: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+    },
     password: { type: String, minlength: 8, required: true },
     isEmailVerified: { type: Boolean, default: false },
     image: {
@@ -42,6 +48,12 @@ const userSchema = new Schema<UserDocument>(
       reason: { type: String, default: '' },
       bannedAt: { type: Date, default: null },
     },
+    deActivate: {
+      isDeActivated: { type: Boolean, default: false },
+      reason: { type: String, default: null },
+      deActivateAt: { type: Date, default: null },
+    },
+    lastLogin: { type: Date, required: true },
   },
   { timestamps: true }
 );

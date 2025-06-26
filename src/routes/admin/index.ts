@@ -64,9 +64,9 @@ router.put(
       if (err instanceof MulterError) {
         // A Multer error occurred when uploading.
         if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-          if (req.files && Array.isArray(req.files) && req.files.length > 10) {
+          if (req.files && Array.isArray(req.files) && req.files.length > 5) {
             return next(
-              new AppError('You can only upload up to 10 images.', 400)
+              new AppError('You can only upload up to 5 images.', 400)
             );
           }
           return next(new AppError('Unexpected file upload error.', 400));

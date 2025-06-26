@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   checkAuth,
+  deActivateAccount,
   emailVerification,
   forgetPassword,
   login,
@@ -10,6 +11,7 @@ import {
 } from '../controllers/auth';
 import { protect } from '../middlewares/protect';
 import {
+  deActivateValidator,
   emailVerificaitonValidator,
   forgetPasswordEmailValidator,
   forgetPasswordValidator,
@@ -32,6 +34,7 @@ router.post(
 router.post('/forget-password', forgetPasswordValidator, forgetPassword);
 router.post('/reset-password', protect, resetPasswordValidator, resetPassword);
 router.post('/verify-email', emailVerificaitonValidator, emailVerification);
+router.post('/deactivate', deActivateValidator, deActivateAccount);
 
 router.get('/verify-auth', protect, checkAuth);
 

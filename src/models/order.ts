@@ -34,7 +34,7 @@ const orderSchema = new Schema<OrderDocument>(
           },
           price: { type: Number, required: true },
           quantity: { type: Number, required: true },
-          image: { type: String, required: true },
+          images: { type: [String], required: true },
         },
       ],
       required: true,

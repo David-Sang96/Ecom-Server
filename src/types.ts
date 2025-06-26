@@ -25,6 +25,12 @@ export interface UserDocument extends Document {
     reason: string;
     bannedAt: Date | null;
   };
+  deActivate: {
+    isDeActivated: boolean;
+    reason: string;
+    deActivateAt: Date | null;
+  };
+  lastLogin: Date;
   updatedAt: Date;
   createdAt: Date;
   isMatchPassword: (value: string) => Promise<boolean>;
