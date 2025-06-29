@@ -44,13 +44,25 @@ const productSchema = new Schema<ProductDocument>(
         values: allowedCategories,
       },
       required: true,
+      validate: [
+        (val: any) => val.length > 0,
+        'At least one category is required',
+      ],
     },
-    countInStock: { type: Number, required: true, min: 1 },
+    subCategories: {
+      type: [String],
+      required: true,
+      validate: [
+        (val: any) => val.length > 0,
+        'At least one subcategory is required',
+      ],
+    },
     status: {
       type: String,
       enum: { values: orderStatus },
       default: 'pending',
     },
+    countInStock: { type: Number, required: true, min: 1 },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }

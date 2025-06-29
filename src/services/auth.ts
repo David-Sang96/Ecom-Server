@@ -15,7 +15,7 @@ export const createUser = (
   password: string,
   role: string
 ) => {
-  return User.create({ name, email, password, role });
+  return User.create({ name, email, password, role, lastLogin: new Date() });
 };
 
 export const updateUser = (id: Types.ObjectId, data: any) => {

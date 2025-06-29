@@ -15,8 +15,8 @@ const orderSchema = new Schema<OrderDocument>(
           name: {
             type: String,
             required: true,
-            minlength: 3,
-            maxlength: 20,
+            minlength: 10,
+            maxlength: 100,
             trim: true,
           },
           description: {
@@ -31,6 +31,18 @@ const orderSchema = new Schema<OrderDocument>(
               values: allowedCategories,
             },
             required: true,
+            validate: [
+              (val: any) => val.length > 0,
+              'At least one category is required',
+            ],
+          },
+          subCategories: {
+            type: [String],
+            required: true,
+            validate: [
+              (val: any) => val.length > 0,
+              'At least one subcategory is required',
+            ],
           },
           price: { type: Number, required: true },
           quantity: { type: Number, required: true },
@@ -45,6 +57,7 @@ const orderSchema = new Schema<OrderDocument>(
     status: {
       type: String,
       enum: { values: orderStatus },
+      default: 'pending',
     },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },

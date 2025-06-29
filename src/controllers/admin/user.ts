@@ -44,35 +44,38 @@ export const updateUser = async (
   const { ban, reason, userId, role, isEmailVerified, name } = req.body;
   const adminId = req.userId;
 
-  if (String(userId) === String(adminId)) {
-    return next(new AppError("You can't ban your own account", 403));
-  }
-
   const user = await getUserById(userId);
   checkUserNotExist(user);
 
-  user!.role = role;
-  if (user?.role === 'ADMIN' && ban) {
-    return next(new AppError('You are not allowed to ban the admin', 403));
+  if (ban && userId.toString() === adminId.toString()) {
+    return next(new AppError("You can't ban yourself", 403));
   }
 
-  if (ban) {
-    user!.ban = {
-      isBanned: true,
-      adminId,
-      reason,
-      bannedAt: new Date(),
-    };
-    user!.status = 'FREEZE';
-  } else {
-    user!.ban = {
-      isBanned: false,
-      adminId: null,
-      reason: '',
-      bannedAt: null,
-    };
-    user!.status = 'ACTIVE';
+  user!.role = role;
+  if (ban && user?.role === 'ADMIN') {
+    return next(new AppError("You can't ban another admin", 403));
   }
+
+  if (typeof ban === 'boolean') {
+    if (ban) {
+      user!.ban = {
+        isBanned: true,
+        adminId,
+        reason,
+        bannedAt: new Date(),
+      };
+      user!.status = 'FREEZE';
+    } else {
+      user!.ban = {
+        isBanned: false,
+        adminId: null,
+        reason: '',
+        bannedAt: null,
+      };
+      user!.status = 'ACTIVE';
+    }
+  }
+
   user!.name = name;
   user!.isEmailVerified = isEmailVerified;
   await user!.save();
@@ -80,6 +83,7 @@ export const updateUser = async (
   res.json({
     success: true,
     message: 'User info has been updated successfully',
+    user: { name: user!.name, email: user!.email },
   });
 };
 

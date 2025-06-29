@@ -59,6 +59,7 @@ export interface ProductDocument extends Document {
   countInStock: number;
   ownerId: Types.ObjectId;
   status: OrderStatus;
+  subCategories: [string];
 }
 
 export type CartProductType = {
@@ -69,6 +70,7 @@ export type CartProductType = {
   quantity: number;
   image: string;
   categories: [string];
+  sizes: String[];
 };
 
 export interface OrderDocument extends Document {

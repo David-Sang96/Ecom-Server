@@ -59,7 +59,7 @@ export const getAllProducts = async (
     return next(new AppError(error[0].msg, 400));
   }
 
-  if (cursor && !Types.ObjectId.isValid(cursor)) {
+  if (cursor && !/^[0-9a-fA-F]{24}$/.test(cursor)) {
     return next(new AppError('Invalid Mongo ID format', 400));
   }
 
@@ -125,7 +125,7 @@ export const stripePayment = async (
       unit_amount: item.price * 100,
       product_data: {
         name: item.name,
-        description: item.description,
+        description: `${item.description}\nSizes: ${item.sizes.join(', ')}`,
         images: [item.image],
       },
     },
@@ -143,6 +143,7 @@ export const stripePayment = async (
         products.map((item: CartProductType) => ({
           _id: item._id,
           quantity: item.quantity,
+          sizes: item.sizes.join(','),
         }))
       ),
     },
@@ -185,6 +186,7 @@ export const confirmOrder = async (
         categories: product.categories,
         quantity: cartItem.quantity,
         images: product.images.map((item) => item.url),
+        sizes: cartItem.sizes.split(','),
       };
     });
 
