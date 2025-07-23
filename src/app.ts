@@ -39,7 +39,7 @@ app
 
 app.set('views', './src/views');
 app.set('view engine', 'ejs');
-app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/public', express.static(path.resolve(__dirname, '../public')));
 
 app.use('/api/v1', routes);
 
