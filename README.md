@@ -51,5 +51,3 @@ This is the backend for an e-commerce application built with **Node.js**, **Expr
 
 ---
 
-## 📂 Project Structure
-
