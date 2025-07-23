@@ -70,7 +70,7 @@ export type CartProductType = {
   quantity: number;
   image: string;
   categories: [string];
-  sizes: String[];
+  subCategories: String[];
 };
 
 export interface OrderDocument extends Document {

@@ -89,6 +89,7 @@ export const resetPasswordValidator = [
 
   // Make 'email' optional, skipping validation if it's undefined or falsy
   body('email', 'Enter a valid email')
+    .optional({ checkFalsy: true })
     .notEmpty()
     .isEmail()
     .trim()

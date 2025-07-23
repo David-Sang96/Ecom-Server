@@ -52,10 +52,10 @@ const productSchema = new Schema<ProductDocument>(
     subCategories: {
       type: [String],
       required: true,
-      validate: [
-        (val: any) => val.length > 0,
-        'At least one subcategory is required',
-      ],
+      validate: {
+        validator: (val: string[]) => val.length > 0,
+        message: 'At least one subcategory is required',
+      },
     },
     status: {
       type: String,

@@ -22,6 +22,15 @@ export const createProductValidator = [
     .trim()
     .notEmpty()
     .isIn(['Electronics', 'Clothing', 'Kitchen', 'Books']),
+  body('categories.*').isString().withMessage('Each category must be a string'),
+
+  body('subCategories')
+    .isArray({ min: 1 })
+    .withMessage('subCategories must be a non-empty array'),
+  body('categories.*')
+    .isString()
+    .withMessage('Each subCategory item must be a string'),
+
   body('countInStock', 'Product must have at least one stock').isInt({
     min: 1,
   }),

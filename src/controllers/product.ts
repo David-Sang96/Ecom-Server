@@ -118,38 +118,48 @@ export const stripePayment = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { products } = req.body;
-  const extractingItems = products.map((item: CartProductType) => ({
-    price_data: {
-      currency: 'usd',
-      unit_amount: item.price * 100,
-      product_data: {
-        name: item.name,
-        description: `${item.description}\nSizes: ${item.sizes.join(', ')}`,
-        images: [item.image],
+  try {
+    const { products } = req.body;
+
+    const extractingItems = products.map((item: CartProductType) => ({
+      price_data: {
+        currency: 'usd',
+        unit_amount: item.price * 100,
+        product_data: {
+          name: item.name,
+          description: `${item.description}\nSizes: ${item.subCategories.join(
+            ', '
+          )}`,
+          images: [item.image],
+        },
       },
-    },
-    quantity: item.quantity,
-  }));
+      quantity: item.quantity,
+    }));
 
-  const session = await stripe.checkout.sessions.create({
-    line_items: extractingItems,
-    mode: 'payment',
-    success_url: `${ENV_VARS.CLIENT_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${ENV_VARS.CLIENT_URL}/cancel`,
-    metadata: {
-      userId: String(req.userId),
-      cart: JSON.stringify(
-        products.map((item: CartProductType) => ({
-          _id: item._id,
-          quantity: item.quantity,
-          sizes: item.sizes.join(','),
-        }))
-      ),
-    },
-  });
+    const session = await stripe.checkout.sessions.create({
+      line_items: extractingItems,
+      mode: 'payment',
+      success_url: `${ENV_VARS.CLIENT_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${ENV_VARS.CLIENT_URL}/cancel`,
+      metadata: {
+        userId: String(req.userId),
+        cart: JSON.stringify(
+          products.map((item: CartProductType) => ({
+            _id: item._id,
+            quantity: item.quantity,
+            subCategories: item.subCategories.join(','),
+          }))
+        ),
+      },
+    });
 
-  res.json({ message: 'Keep alive!', success: true, id: session?.id });
+    res.json({ message: 'Keep alive!', success: true, id: session?.id });
+  } catch (err) {
+    console.error('❌ Stripe Error:', err);
+    res
+      .status(500)
+      .json({ success: false, message: 'Something went wrong', error: err });
+  }
 };
 
 export const confirmOrder = async (
@@ -186,7 +196,7 @@ export const confirmOrder = async (
         categories: product.categories,
         quantity: cartItem.quantity,
         images: product.images.map((item) => item.url),
-        sizes: cartItem.sizes.split(','),
+        subCategories: cartItem.subCategories.split(','),
       };
     });
 

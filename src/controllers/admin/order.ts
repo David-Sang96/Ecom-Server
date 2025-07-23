@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 import { Order } from '../../models/order';
 import AppError from '../../utils/AppError';
 
@@ -23,9 +24,6 @@ export const getAllOrders = async (
   res: Response,
   next: NextFunction
 ) => {
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
   const orders = await Order.find()
     .sort({ createdAt: -1 })
     .populate('userId', 'name');
@@ -74,7 +72,7 @@ export const updateOrder = async (
   };
 
   const updatedOrder = await Order.findOneAndUpdate(
-    { _id: orderId, userId },
+    { _id: orderId, userId: new mongoose.Types.ObjectId(userId) },
     data,
     { new: true }
   );

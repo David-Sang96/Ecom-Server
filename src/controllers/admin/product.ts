@@ -32,12 +32,16 @@ export const createProduct = async (
   }
 
   const uploadedFiles = req.files as Express.Multer.File[];
-  const { name, description, price, countInStock } = req.body;
+  const { name, description, price, countInStock, subCategories } = req.body;
   const ownerId = req.userId;
 
   let categories = req.body.categories;
   if (!Array.isArray(categories)) {
     categories = [categories];
+  }
+
+  if (!Array.isArray(subCategories)) {
+    return next(new AppError('Sub categories must be array', 400));
   }
 
   if (!uploadedFiles || uploadedFiles.length === 0) {
@@ -55,6 +59,7 @@ export const createProduct = async (
     categories,
     countInStock,
     ownerId,
+    subCategories,
     images: result.map((item) => ({
       url: item.secure_url,
       public_id: item.public_id,

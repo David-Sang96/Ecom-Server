@@ -1,6 +1,7 @@
 import 'dotenv/config';
 
 export const ENV_VARS = {
+  API_URL: process.env.API_URL,
   MONGO_URI: process.env.MONGO_URI,
   PORT: process.env.PORT,
   BASE_URL: process.env.BASE_URL,

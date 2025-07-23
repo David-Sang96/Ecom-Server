@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
 
+import './config/cron';
 import { ENV_VARS } from './config/envVars';
 import { errorMiddleware } from './middlewares/errorHandler';
 import { rateLimiter } from './middlewares/reateLimiter';
