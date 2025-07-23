@@ -4,14 +4,14 @@
     "lib": ["ESNext"],
     "module": "CommonJS",
     // "moduleResolution": "nodenext",
+    "rootDir": "src",
     "sourceMap": true,
     "outDir": "dist",
-    "rootDir": "src",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "noImplicitAny": true,
     "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": ["./*.js", "src/**/*.ts"]
 }
