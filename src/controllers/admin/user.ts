@@ -103,7 +103,9 @@ export const deleteUser = async (
     return next(new AppError('No user found', 404));
   }
 
-  await deleteSingleFile(user.image!.public_id);
+  if (user.image?.public_id) {
+    await deleteSingleFile(user.image!.public_id);
+  }
   await User.findByIdAndDelete(user._id);
   res.json({
     success: true,
