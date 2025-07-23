@@ -14,7 +14,7 @@ import routes from './routes';
 
 export const app = express();
 
-const whiteList = [ENV_VARS.CLIENT_URL];
+const whiteList = [ENV_VARS.CLIENT_URL, 'http://localhost:5173'];
 const corsOptions = {
   origin: (origin: any, cb: (err: Error | null, origin?: any) => void) => {
     if (!origin) return cb(null, true);

@@ -6,11 +6,12 @@
     "moduleResolution": "nodenext",
     "sourceMap": true,
     "outDir": "dist",
+    "rootDir": "src",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "noImplicitAny": true,
     "skipLibCheck": true
   },
-  "include": ["./*.js", "src/**/*.ts"]
+  "include": ["src"]
 }
