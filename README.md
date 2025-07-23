@@ -9,7 +9,7 @@ This is the backend for an e-commerce application built with **Node.js**, **Expr
 ### 🔐 Authentication
 - User registration with email verification
 - Login, logout, and protected routes
-- Password reset via email or SMS (Twilio)
+- Password reset via email 
 - JWT-based auth
 
 ### 🛍️ Products
